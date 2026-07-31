@@ -1,4 +1,4 @@
-name: Investment OS 实时监控
+name: Investment OS V3 AI决策
 
 on:
   workflow_dispatch:
@@ -40,7 +40,7 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
 
-      - name: 恢复防刷屏状态
+      - name: 恢复决策统计状态
         id: state-cache
         uses: actions/cache/restore@v4
         with:
@@ -53,12 +53,16 @@ jobs:
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: >-
           python -m src.main --mode realtime
           ${{ inputs.dry_run && '--dry-run' || '' }}
           ${{ inputs.send_test_message && '--test-message' || '' }}
 
-      - name: 保存防刷屏状态
+      - name: 保存决策统计状态
         if: always() && hashFiles('state/alerts.json') != ''
         uses: actions/cache/save@v4
         with:

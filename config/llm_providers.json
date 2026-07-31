@@ -1,0 +1,8 @@
+{
+  "disabled": {"protocol": "disabled"},
+  "openai": {"protocol": "openai_compatible", "base_url": "https://api.openai.com/v1"},
+  "deepseek": {"protocol": "openai_compatible", "base_url": "https://api.deepseek.com"},
+  "qwen": {"protocol": "openai_compatible", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
+  "gemini": {"protocol": "openai_compatible", "base_url": "https://generativelanguage.googleapis.com/v1beta/openai"},
+  "claude": {"protocol": "anthropic", "base_url": "https://api.anthropic.com/v1"}
+}

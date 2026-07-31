@@ -1,10 +1,14 @@
 {
   "assets": [
-    {"symbol": "BTC-USD", "type": "crypto", "provider_symbol": "BTCUSDT"},
+    {"symbol": "BTC", "type": "crypto", "provider_symbol": "BTCUSDT"},
     {"symbol": "QQQ", "type": "etf"},
     {"symbol": "NVDA", "type": "stock", "cik": "0001045810"},
     {"symbol": "MSFT", "type": "stock", "cik": "0000789019"},
+    {"symbol": "META", "type": "stock", "cik": "0001326801"},
+    {"symbol": "GOOG", "type": "stock", "cik": "0001652044"},
+    {"symbol": "AMZN", "type": "stock", "cik": "0001018724"},
     {"symbol": "AVGO", "type": "stock", "cik": "0001730168"},
+    {"symbol": "TSM", "type": "stock", "cik": "0001046179"},
     {"symbol": "SNDK", "type": "stock", "cik": "0002023554"},
     {"symbol": "MU", "type": "stock", "cik": "0000723125"}
   ]

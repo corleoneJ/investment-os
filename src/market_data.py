@@ -11,7 +11,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .indicators import ema, pct_change, realized_volatility, rsi
+from .indicators import atr, ema, macd, pct_change, realized_volatility, rsi
 
 LOGGER = logging.getLogger(__name__)
 UTC = timezone.utc
@@ -36,11 +36,19 @@ class MarketSnapshot:
     volume_ratio: float | None
     ema20: float | None
     ema60: float | None
+    ema200: float | None
     rsi: float | None
     rsi_previous: float | None
+    macd: float | None
+    macd_signal: float | None
+    macd_histogram: float | None
+    atr: float | None
+    atr_pct: float | None
     volatility: float | None
     breakout: bool
     breakdown: bool
+    pullback: bool
+    volume_state: str
     recent_high: float | None
     recent_low: float | None
     fresh: bool
@@ -48,18 +56,18 @@ class MarketSnapshot:
     error: str | None = None
 
 
-def build_session() -> requests.Session:
+def build_session(retries: int = 2) -> requests.Session:
     retry = Retry(
-        total=2,
-        connect=2,
-        read=2,
+        total=retries,
+        connect=retries,
+        read=retries,
         backoff_factor=0.4,
         status_forcelist=(429, 500, 502, 503, 504),
         allowed_methods=frozenset({"GET"}),
         respect_retry_after_header=True,
     )
     session = requests.Session()
-    session.headers.update({"User-Agent": "InvestmentOS/1.0 (GitHub Actions market monitor)"})
+    session.headers.update({"User-Agent": "InvestmentOS/3.0 (GitHub Actions decision system)"})
     session.mount("https://", HTTPAdapter(max_retries=retry, pool_connections=12, pool_maxsize=12))
     return session
 
@@ -161,13 +169,32 @@ def make_snapshot(asset: str, asset_type: str, candles: list[Candle], source: st
     closes = [c.close for c in candles]
     ema20_values = ema(closes, 20)
     ema60_values = ema(closes, 60)
+    ema200_values = ema(closes, 200)
     rsi_values = rsi(closes, 14)
+    macd_values, macd_signal_values, macd_histogram_values = macd(closes)
+    atr_values = atr(
+        [candle.high for candle in candles],
+        [candle.low for candle in candles],
+        closes,
+    )
     latest = candles[-1]
     prior = candles[-21:-1]
     average_volume = sum(c.volume for c in prior) / len(prior) if prior else 0
     volume_ratio = latest.volume / average_volume if average_volume > 0 else None
     recent_high = max((c.high for c in prior), default=None)
     recent_low = min((c.low for c in prior), default=None)
+    latest_atr = next((value for value in reversed(atr_values) if value is not None), None)
+    volume_state = (
+        "放量"
+        if volume_ratio is not None and volume_ratio >= 1.5
+        else "缩量"
+        if volume_ratio is not None and volume_ratio <= 0.6
+        else "正常"
+    )
+    pullback = bool(
+        ema20_values[-1] > ema60_values[-1]
+        and abs(latest.close / ema20_values[-1] - 1) <= 0.01
+    )
     now = datetime.now(UTC)
     freshness_limit = timedelta(minutes=15 if asset_type == "crypto" else 45)
     return MarketSnapshot(
@@ -184,11 +211,19 @@ def make_snapshot(asset: str, asset_type: str, candles: list[Candle], source: st
         volume_ratio=volume_ratio,
         ema20=ema20_values[-1],
         ema60=ema60_values[-1],
+        ema200=ema200_values[-1],
         rsi=next((value for value in reversed(rsi_values) if value is not None), None),
         rsi_previous=next((value for value in reversed(rsi_values[:-1]) if value is not None), None),
+        macd=macd_values[-1],
+        macd_signal=macd_signal_values[-1],
+        macd_histogram=macd_histogram_values[-1],
+        atr=latest_atr,
+        atr_pct=latest_atr / latest.close * 100 if latest_atr and latest.close else None,
         volatility=realized_volatility(closes),
         breakout=recent_high is not None and latest.close > recent_high,
         breakdown=recent_low is not None and latest.close < recent_low,
+        pullback=pullback,
+        volume_state=volume_state,
         recent_high=recent_high,
         recent_low=recent_low,
         fresh=now - latest.time <= freshness_limit,
@@ -213,11 +248,19 @@ def unavailable_snapshot(asset: str, asset_type: str, error: str) -> MarketSnaps
         volume_ratio=None,
         ema20=None,
         ema60=None,
+        ema200=None,
         rsi=None,
         rsi_previous=None,
+        macd=None,
+        macd_signal=None,
+        macd_histogram=None,
+        atr=None,
+        atr_pct=None,
         volatility=None,
         breakout=False,
         breakdown=False,
+        pullback=False,
+        volume_state="数据暂不可用",
         recent_high=None,
         recent_low=None,
         fresh=False,

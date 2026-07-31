@@ -3,91 +3,133 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from .alerts import format_pct
+from .decision_engine import DecisionReport
 from .market_data import MarketSnapshot
-from .news import NewsItem
-from .scoring import Scores
 
 BEIJING = ZoneInfo("Asia/Shanghai")
 
 
 def build_daily_summary(
+    report: DecisionReport,
     snapshots: dict[str, MarketSnapshot],
-    scores: dict[str, Scores],
-    news: list[NewsItem],
     history: list[dict],
     now: datetime,
 ) -> str:
     local_now = now.astimezone(BEIJING)
     today_events = [
-        item for item in history
+        item
+        for item in history
         if _is_today(item.get("time", ""), local_now.date().isoformat())
     ]
-    available = [item for item in snapshots.values() if item.changes.get("24h") is not None]
-    biggest = max(available, key=lambda item: abs(item.changes["24h"] or 0), default=None)
-    reliable_scores = {
-        symbol: score for symbol, score in scores.items()
-        if symbol in snapshots and not snapshots[symbol].error
-    }
-    opportunity = sorted(
-        reliable_scores.items(), key=lambda item: item[1].opportunity, reverse=True
-    )[:3]
-    risks = sorted(reliable_scores.items(), key=lambda item: item[1].risk, reverse=True)[:3]
-
-    event_lines = (
-        "\n".join(f"- {item['asset']}｜{item['type']}｜{item['summary']}" for item in today_events[-10:])
-        if today_events else "- 今日无重大异常，维持原定定投计划。"
-    )
-    biggest_line = (
-        f"{biggest.asset}（{format_pct(biggest.changes.get('24h'))}，数据时间 "
-        f"{biggest.data_time.astimezone(BEIJING):%Y-%m-%d %H:%M}）"
-        if biggest else "数据暂不可用"
-    )
-    news_lines = "- 当前免费数据源未发现可确认的明日事件；请关注 SEC、BLS 与美联储官方日历更新。"
-    adjust = _investment_rhythm(scores, today_events)
-    return f"""【Investment OS 每日汇总】
+    best = report.opportunities[0] if report.opportunities else None
+    highest_risk = report.risks[0] if report.risks else None
+    industry_changes = _industry_changes(report)
+    tomorrow = _tomorrow_events(report, local_now)
+    top_opportunities = "\n".join(
+        f"{index}. {item.asset}：{item.score}/100｜{item.reasons[0]}"
+        for index, item in enumerate(report.opportunities[:5], 1)
+    ) or "数据暂不可用"
+    top_risks = "\n".join(
+        f"{index}. {item.asset}：{item.score}/100｜{item.reasons[0]}"
+        for index, item in enumerate(report.risks[:5], 1)
+    ) or "数据暂不可用"
+    summary = _one_line_summary(best, highest_risk)
+    action = _daily_action(report)
+    return f"""【Investment OS V3 每日决策】
 
 日期：{local_now:%Y-%m-%d}（北京时间）
 
-当日触发过的预警：
-{event_lines}
+今天发生了什么：
+共生成 {len(today_events)} 条已发送AI决策；扫描 {len(report.decisions)} 个资产。
 
-当日涨跌幅最大资产：
-{biggest_line}
+最大的机会：
+{best.asset if best else "数据暂不可用"}｜{best.score if best else 0}/100
+{best.reasons[0] if best else "数据暂不可用"}
 
-当日机会榜 Top3：
-{_rank_lines(opportunity, "opportunity")}
+最大的风险：
+{highest_risk.asset if highest_risk else "数据暂不可用"}｜{highest_risk.score if highest_risk else 0}/100
+{highest_risk.reasons[0] if highest_risk else "数据暂不可用"}
 
-当日风险榜 Top3：
-{_rank_lines(risks, "risk")}
+机会 TOP5：
+{top_opportunities}
 
-明日重点事件：
-{news_lines}
-说明：仅列出当前已获取的官方/主流来源信息；未确认日程不作推测。
+风险 TOP5：
+{top_risks}
 
-今日是否需要调整定投节奏：
-{adjust}
+产业链变化：
+{industry_changes}
 
-预算纪律：每日约 10 USDT、每月约 300 USDT；只做现货，不使用杠杆。
+明天重点关注：
+{tomorrow}
+
+执行建议：
+{action}
+
+AI一句总结：
+{summary}
+
 风险提示：本系统只做辅助分析，不构成收益保证。"""
 
 
-def _rank_lines(items: list[tuple[str, Scores]], field: str) -> str:
-    if not items:
-        return "- 数据暂不可用"
+def _industry_changes(report: DecisionReport) -> str:
+    if not report.events:
+        return "暂未发现可确认的重大产业链事件。"
+    lines: list[str] = []
+    seen: set[str] = set()
+    for event in sorted(report.events, key=lambda item: item.level, reverse=True):
+        if event.industry.theme in seen:
+            continue
+        seen.add(event.industry.theme)
+        beneficiaries = "、".join(event.industry.beneficiaries) or "待确认"
+        victims = "、".join(event.industry.victims) or "待确认"
+        lines.append(
+            f"- {event.industry.theme}：{' → '.join(event.industry.chain)}；"
+            f"受益 {beneficiaries}；受损 {victims}"
+        )
+    return "\n".join(lines[:5])
+
+
+def _tomorrow_events(report: DecisionReport, local_now: datetime) -> str:
+    tomorrow = local_now.date().fromordinal(local_now.date().toordinal() + 1)
+    matched = [
+        event
+        for event in report.future_events
+        if event.event_time.astimezone(BEIJING).date() == tomorrow
+    ]
+    if not matched:
+        return "未来事件源暂未发现可确认的明日事件；继续关注官方日历。"
     return "\n".join(
-        f"{index}. {asset}：{getattr(score, field)}/100"
-        for index, (asset, score) in enumerate(items, 1)
+        f"- {event.event_time.astimezone(BEIJING):%H:%M}｜{event.name}｜"
+        f"可能波动资产：{'、'.join(event.assets)}"
+        for event in matched
     )
 
 
-def _investment_rhythm(scores: dict[str, Scores], events: list[dict]) -> str:
-    high_risk = sum(1 for score in scores.values() if score.risk >= 70)
-    if high_risk >= 2:
-        return "风险信号偏多，建议暂缓新增，等待重新企稳。"
-    if any(item.get("type") == "急涨预警" for item in events):
-        return "存在急涨资产，维持预算但不追高，等待回踩。"
-    return "无需调整，维持原定定投计划；如执行则继续小额分批。"
+def _one_line_summary(best, highest_risk) -> str:
+    if not best or not highest_risk:
+        return "数据不足，当前最重要的是等待可靠信息，不做确定性判断。"
+    if highest_risk.score > best.score:
+        return (
+            f"今天风险端以 {highest_risk.asset} 最突出，"
+            f"机会端关注 {best.asset}，执行上先控制新增仓位。"
+        )
+    return (
+        f"今天真正值得关注的是 {best.asset} 的机会线索，"
+        f"同时防范 {highest_risk.asset} 的风险。"
+    )
+
+
+def _daily_action(report: DecisionReport) -> str:
+    if not report.decisions:
+        return "暂停新增"
+    risk_count = sum(1 for decision in report.decisions if decision.risk.score >= 70)
+    if risk_count >= 3:
+        return "暂停新增"
+    top = report.opportunities[0] if report.opportunities else None
+    if top and top.score >= 75:
+        decision = next(item for item in report.decisions if item.asset == top.asset)
+        return decision.action
+    return "继续定投"
 
 
 def _is_today(value: str, target_date: str) -> bool:

@@ -1,1 +1,1 @@
-"""Investment OS 实时监控。"""
+"""Investment OS V3 AI 投资决策系统。"""

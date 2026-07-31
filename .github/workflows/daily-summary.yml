@@ -1,4 +1,4 @@
-name: Investment OS 每日汇总
+name: Investment OS V3 每日决策
 
 on:
   workflow_dispatch:
@@ -48,6 +48,10 @@ jobs:
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: >-
           python -m src.main --mode daily
           ${{ inputs.dry_run && '--dry-run' || '' }}

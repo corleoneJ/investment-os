@@ -1,0 +1,57 @@
+{
+  "themes": {
+    "ai_capex": {
+      "name": "AI资本开支",
+      "keywords": ["ai capex", "capital expenditure", "data center", "datacenter", "ai infrastructure", "资本开支", "数据中心"],
+      "industries": ["云计算", "AI服务器", "GPU", "高速网络", "晶圆代工", "HBM", "企业级SSD"],
+      "beneficiaries": ["NVDA", "AVGO", "TSM", "MU", "SNDK"],
+      "demand_sources": ["MSFT", "META", "GOOG", "AMZN"],
+      "chain": ["云厂商资本开支", "AI服务器需求", "GPU/ASIC与高速网络", "晶圆代工", "HBM", "企业级SSD"]
+    },
+    "cloud_growth": {
+      "name": "云计算需求",
+      "keywords": ["azure", "aws", "google cloud", "cloud growth", "cloud revenue", "云计算", "云业务"],
+      "industries": ["云计算", "AI服务器", "半导体"],
+      "beneficiaries": ["MSFT", "GOOG", "AMZN", "NVDA", "AVGO"],
+      "demand_sources": ["MSFT", "GOOG", "AMZN"],
+      "chain": ["云收入/订单", "数据中心利用率", "服务器与网络采购", "半导体需求"]
+    },
+    "semiconductor_cycle": {
+      "name": "半导体周期",
+      "keywords": ["semiconductor", "chip", "gpu", "hbm", "memory", "foundry", "wafer", "半导体", "芯片", "存储"],
+      "industries": ["GPU", "ASIC", "晶圆代工", "HBM", "SSD"],
+      "beneficiaries": ["NVDA", "AVGO", "TSM", "MU", "SNDK"],
+      "demand_sources": ["MSFT", "META", "GOOG", "AMZN"],
+      "chain": ["终端需求", "芯片设计", "晶圆代工", "先进封装", "存储"]
+    },
+    "bitcoin_etf": {
+      "name": "BTC现货ETF资金",
+      "keywords": ["bitcoin etf", "btc etf", "etf inflow", "etf outflow", "比特币etf", "资金流入", "资金流出"],
+      "industries": ["数字资产", "现货ETF", "风险资产"],
+      "beneficiaries": ["BTC"],
+      "demand_sources": ["QQQ"],
+      "chain": ["ETF申赎", "现货买卖需求", "BTC流动性", "风险偏好"]
+    },
+    "macro_liquidity": {
+      "name": "宏观流动性",
+      "keywords": ["fomc", "federal reserve", "powell", "cpi", "nonfarm", "interest rate", "美联储", "通胀", "非农", "利率"],
+      "industries": ["利率", "美元", "成长股估值", "数字资产"],
+      "beneficiaries": ["QQQ", "BTC"],
+      "demand_sources": [],
+      "chain": ["宏观数据/政策", "利率与美元预期", "风险偏好", "成长股与BTC估值"]
+    }
+  },
+  "asset_roles": {
+    "BTC": "数字稀缺资产与全球流动性敏感资产",
+    "QQQ": "美股大型成长股与风险偏好代理",
+    "NVDA": "AI GPU与加速计算核心供应商",
+    "MSFT": "Azure云与AI资本开支需求方",
+    "META": "广告平台与AI基础设施需求方",
+    "GOOG": "Google Cloud、AI模型与自研芯片需求方",
+    "AMZN": "AWS云与AI基础设施需求方",
+    "AVGO": "AI网络、定制ASIC与连接芯片供应商",
+    "TSM": "先进制程晶圆代工关键产能",
+    "MU": "HBM与内存供应商",
+    "SNDK": "NAND与企业级SSD供应商"
+  }
+}

@@ -16,7 +16,7 @@ from .market_data import build_session
 
 LOGGER = logging.getLogger(__name__)
 UTC = timezone.utc
-NEWS_LOOKBACK = timedelta(hours=3)
+NEWS_LOOKBACK = timedelta(hours=24)
 MAJOR_FORMS = {"8-K", "10-Q", "10-K", "6-K", "20-F"}
 MAJOR_TERMS = (
     "earnings", "revenue", "guidance", "outlook", "capital expenditure", "capex",
@@ -59,13 +59,14 @@ class NewsClient:
         self.timeout = timeout
         self.session = build_session()
         self.sec_user_agent = (
-            os.getenv("SEC_USER_AGENT") or "InvestmentOS/1.0 admin@example.invalid"
+            os.getenv("SEC_USER_AGENT") or "InvestmentOS/3.0 admin@example.invalid"
         )
 
     def fetch(self, assets: list[dict[str, Any]]) -> list[NewsItem]:
+        symbols = tuple(asset["symbol"] for asset in assets)
         jobs: list[tuple[str, Any]] = [
-            ("美联储", self._fetch_fed),
-            ("美国劳工统计局", self._fetch_bls),
+            ("美联储", lambda: self._fetch_fed(symbols)),
+            ("美国劳工统计局", lambda: self._fetch_bls(symbols)),
             ("主流媒体聚合", lambda: self._fetch_google_news([a["symbol"] for a in assets])),
         ]
         jobs.extend(
@@ -121,19 +122,19 @@ class NewsClient:
             )
         return result
 
-    def _fetch_fed(self) -> list[NewsItem]:
+    def _fetch_fed(self, symbols: tuple[str, ...]) -> list[NewsItem]:
         return self._fetch_rss(
             "https://www.federalreserve.gov/feeds/press_all.xml",
             source_default="美联储",
-            assets=("BTC-USD", "QQQ", "NVDA", "MSFT", "AVGO", "SNDK", "MU"),
+            assets=symbols,
             category="宏观/美联储",
         )
 
-    def _fetch_bls(self) -> list[NewsItem]:
+    def _fetch_bls(self, symbols: tuple[str, ...]) -> list[NewsItem]:
         return self._fetch_rss(
             "https://www.bls.gov/feed/bls_latest.rss",
             source_default="美国劳工统计局",
-            assets=("BTC-USD", "QQQ", "NVDA", "MSFT", "AVGO", "SNDK", "MU"),
+            assets=symbols,
             category="宏观数据",
         )
 

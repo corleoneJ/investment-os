@@ -4,5 +4,9 @@
   "breakout": {"volume_ratio": 1.5, "trend_score": 70},
   "pullback": {"ema20_distance_pct": 1.0, "opportunity_score": 70},
   "weakening": {"rsi_below": 40, "volume_ratio": 1.3},
-  "dedup": {"cooldown_minutes": 60, "strengthening_ratio": 1.2, "strengthening_points": 1.0}
+  "v3_observation": {
+    "send_all": true,
+    "frequency_limit_enabled": false,
+    "score_gate_enabled": false
+  }
 }
