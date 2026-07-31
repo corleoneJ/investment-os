@@ -1,0 +1,11 @@
+{
+  "assets": [
+    {"symbol": "BTC-USD", "type": "crypto", "provider_symbol": "BTCUSDT"},
+    {"symbol": "QQQ", "type": "etf"},
+    {"symbol": "NVDA", "type": "stock", "cik": "0001045810"},
+    {"symbol": "MSFT", "type": "stock", "cik": "0000789019"},
+    {"symbol": "AVGO", "type": "stock", "cik": "0001730168"},
+    {"symbol": "SNDK", "type": "stock", "cik": "0002023554"},
+    {"symbol": "MU", "type": "stock", "cik": "0000723125"}
+  ]
+}

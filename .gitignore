@@ -1,0 +1,9 @@
+__pycache__/
+.pytest_cache/
+.venv/
+work/
+outputs/
+*.py[cod]
+state/alerts.json
+state/*.tmp
+.DS_Store

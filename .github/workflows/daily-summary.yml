@@ -1,0 +1,60 @@
+name: Investment OS 每日汇总
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "仅生成汇总，不发送飞书消息"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # 北京时间 20:05 = UTC 12:05（中国不实行夏令时）
+    - cron: "5 12 * * *"
+
+concurrency:
+  group: investment-os-monitor-state
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 恢复监控状态
+        uses: actions/cache/restore@v4
+        with:
+          path: state/alerts.json
+          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            investment-os-state-${{ runner.os }}-
+
+      - name: 生成并发送每日汇总
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+        run: >-
+          python -m src.main --mode daily
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: 保存监控状态
+        if: always() && hashFiles('state/alerts.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: state/alerts.json
+          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}

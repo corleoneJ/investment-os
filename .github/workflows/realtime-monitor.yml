@@ -1,0 +1,66 @@
+name: Investment OS 实时监控
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "仅扫描，不发送飞书消息"
+        required: false
+        type: boolean
+        default: false
+      send_test_message:
+        description: "额外发送一条飞书连通性测试消息"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: "*/5 * * * *"
+
+concurrency:
+  group: investment-os-monitor-state
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 恢复防刷屏状态
+        id: state-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: state/alerts.json
+          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            investment-os-state-${{ runner.os }}-
+
+      - name: 扫描市场
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+        run: >-
+          python -m src.main --mode realtime
+          ${{ inputs.dry_run && '--dry-run' || '' }}
+          ${{ inputs.send_test_message && '--test-message' || '' }}
+
+      - name: 保存防刷屏状态
+        if: always() && hashFiles('state/alerts.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: state/alerts.json
+          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}
