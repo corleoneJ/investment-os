@@ -14,6 +14,7 @@ on:
         type: boolean
         default: false
   schedule:
+    # 定时任务仅从默认分支 main 注册并执行。
     # GitHub cron 使用 UTC；该表达式每个小时的 00/05/10/.../55 分执行。
     - cron: "*/5 * * * *"
 

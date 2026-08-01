@@ -14,6 +14,7 @@ on:
         type: boolean
         default: false
   schedule:
+    # 定时任务仅从默认分支 main 注册并执行。
     - cron: "*/30 * * * *"
 
 concurrency:
