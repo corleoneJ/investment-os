@@ -8,6 +8,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .data_quality import ProviderState, ProviderStatus, provider_status
 from .market_data import build_session
 
 LOGGER = logging.getLogger(__name__)
@@ -31,6 +32,21 @@ class FutureEvent:
     assets: tuple[str, ...]
     expected_impact: str
     url: str
+    provider: ProviderStatus | None = None
+
+    def __post_init__(self) -> None:
+        if self.provider is None:
+            object.__setattr__(
+                self,
+                "provider",
+                provider_status(
+                    status=ProviderState.HEALTHY,
+                    source=self.source,
+                    source_url=self.url,
+                    data_timestamp=None,
+                    confidence=85,
+                ),
+            )
 
 
 class FutureEventScanner:

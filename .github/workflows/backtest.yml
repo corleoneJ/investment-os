@@ -1,0 +1,39 @@
+name: Investment OS V4 历史回放
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: investment-os-backtest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      - name: 配置 Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+      - name: 校验配置并运行测试
+        run: |
+          python -m src.config_validator
+          python -m unittest -v
+      - name: 执行历史回放（网络请求内置重试与退避）
+        run: python -m src.backtest
+      - name: 上传回放报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: investment-os-v4-backtest-${{ github.run_id }}
+          path: reports/
+          if-no-files-found: warn

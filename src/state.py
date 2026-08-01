@@ -72,6 +72,35 @@ class StateStore:
         )
         self._prune(now)
 
+    def record_v4_decision(
+        self,
+        asset: str,
+        now: datetime,
+        price: float | None,
+        investment_score: int,
+        opportunity_score: int,
+        risk_score: int,
+        data_quality_score: int,
+        action: str,
+        summary: str,
+    ) -> None:
+        """保存可用于每日复盘的早期判断，不承担发送限流职责。"""
+        self.data["history"].append(
+            {
+                "time": now.astimezone(UTC).isoformat(),
+                "asset": asset,
+                "type": "V4决策",
+                "price": price,
+                "investment_score": investment_score,
+                "opportunity_score": opportunity_score,
+                "risk_score": risk_score,
+                "data_quality_score": data_quality_score,
+                "action": action,
+                "summary": summary,
+            }
+        )
+        self._prune(now)
+
     def news_seen(self, fingerprint: str) -> bool:
         return fingerprint in self.data["news_hashes"]
 

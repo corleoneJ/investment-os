@@ -11,6 +11,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .data_quality import ProviderState, ProviderStatus, provider_status
 from .indicators import atr, ema, macd, pct_change, realized_volatility, rsi
 
 LOGGER = logging.getLogger(__name__)
@@ -54,6 +55,10 @@ class MarketSnapshot:
     fresh: bool
     source: str
     error: str | None = None
+    obv_trend: str | None = None
+    vwap: float | None = None
+    dollar_volume_proxy: float | None = None
+    provider: ProviderStatus | None = None
 
 
 def build_session(retries: int = 2) -> requests.Session:
@@ -195,6 +200,22 @@ def make_snapshot(asset: str, asset_type: str, candles: list[Candle], source: st
         ema20_values[-1] > ema60_values[-1]
         and abs(latest.close / ema20_values[-1] - 1) <= 0.01
     )
+    recent_candles = candles[-20:]
+    total_volume = sum(candle.volume for candle in recent_candles)
+    vwap_value = (
+        sum(
+            ((candle.high + candle.low + candle.close) / 3) * candle.volume
+            for candle in recent_candles
+        ) / total_volume
+        if total_volume > 0
+        else None
+    )
+    obv_values = [0.0]
+    for previous, current in zip(candles[-21:-1], candles[-20:]):
+        direction = 1 if current.close > previous.close else -1 if current.close < previous.close else 0
+        obv_values.append(obv_values[-1] + direction * current.volume)
+    obv_change = obv_values[-1] - obv_values[max(0, len(obv_values) - 6)]
+    obv_trend = "上升" if obv_change > 0 else "下降" if obv_change < 0 else "横盘"
     now = datetime.now(UTC)
     freshness_limit = timedelta(minutes=15 if asset_type == "crypto" else 45)
     return MarketSnapshot(
@@ -228,6 +249,23 @@ def make_snapshot(asset: str, asset_type: str, candles: list[Candle], source: st
         recent_low=recent_low,
         fresh=now - latest.time <= freshness_limit,
         source=source,
+        obv_trend=obv_trend,
+        vwap=vwap_value,
+        dollar_volume_proxy=latest.close * latest.volume,
+        provider=provider_status(
+            status=ProviderState.HEALTHY if now - latest.time <= freshness_limit else ProviderState.STALE,
+            source=source,
+            source_url=(
+                "https://data-api.binance.vision/api/v3/klines"
+                if asset_type == "crypto"
+                else "https://query1.finance.yahoo.com/v8/finance/chart/"
+            ),
+            data_timestamp=latest.time,
+            confidence=(90 if asset_type == "crypto" else 70)
+            if now - latest.time <= freshness_limit
+            else 35,
+            is_fallback=asset_type != "crypto",
+        ),
     )
 
 
@@ -266,4 +304,12 @@ def unavailable_snapshot(asset: str, asset_type: str, error: str) -> MarketSnaps
         fresh=False,
         source="数据暂不可用",
         error=error,
+        provider=provider_status(
+            status=ProviderState.UNAVAILABLE,
+            source="行情源",
+            source_url="",
+            data_timestamp=None,
+            confidence=0,
+            error=type(error).__name__ if not isinstance(error, str) else "行情获取失败",
+        ),
     )

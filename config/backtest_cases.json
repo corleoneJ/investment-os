@@ -1,0 +1,60 @@
+{
+  "cases": [
+    {
+      "id": "meta_ai_capex_2024q1",
+      "type": "大型科技财报后AI产业链联动",
+      "event_date": "2024-04-25",
+      "symbol": "NVDA",
+      "title": "Meta披露2024年一季度业绩与资本开支展望后的AI产业链观察",
+      "source_url": "https://investor.atmeta.com/investor-news/press-release-details/2024/Meta-Reports-First-Quarter-2024-Results/default.aspx"
+    },
+    {
+      "id": "mu_memory_2024q3",
+      "type": "存储板块行情",
+      "event_date": "2024-09-26",
+      "symbol": "MU",
+      "title": "Micron 2024财年第四季度业绩后的存储周期观察",
+      "source_url": "https://investors.micron.com/quarterly-results"
+    },
+    {
+      "id": "cpi_2024_06",
+      "type": "CPI/FOMC冲击",
+      "event_date": "2024-06-12",
+      "symbol": "QQQ",
+      "title": "美国2024年5月CPI发布日",
+      "source_url": "https://www.bls.gov/news.release/archives/cpi_06122024.htm"
+    },
+    {
+      "id": "btc_etf_launch_2024",
+      "type": "BTC ETF大额流入或流出",
+      "event_date": "2024-01-11",
+      "symbol": "BTC-USD",
+      "title": "美国现货比特币ETF开始交易后的价格观察",
+      "source_url": "https://www.sec.gov/newsroom/speeches-statements/gensler-statement-spot-bitcoin-011023"
+    },
+    {
+      "id": "nvda_spike_2024q1",
+      "type": "单日暴涨后回撤",
+      "event_date": "2024-02-22",
+      "symbol": "NVDA",
+      "title": "NVIDIA财报后单日大幅波动",
+      "source_url": "https://investor.nvidia.com/financial-info/financial-reports-and-results/default.aspx"
+    },
+    {
+      "id": "qqq_false_breakout_2022",
+      "type": "假突破",
+      "event_date": "2022-08-16",
+      "symbol": "QQQ",
+      "title": "QQQ阶段高点后的突破有效性检验",
+      "source_url": "https://www.nasdaq.com/market-activity/etf/qqq/historical"
+    },
+    {
+      "id": "intel_value_trap_2024",
+      "type": "价值陷阱案例",
+      "event_date": "2024-04-26",
+      "symbol": "INTC",
+      "title": "低估值与基本面恶化并存的价值陷阱检验",
+      "source_url": "https://www.intc.com/filings-reports/quarterly-results"
+    }
+  ]
+}

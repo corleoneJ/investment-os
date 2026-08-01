@@ -1,0 +1,25 @@
+{
+  "max_symbols": 50,
+  "assets": [
+    {"symbol": "AMD", "type": "stock", "themes": ["AI算力", "GPU"]},
+    {"symbol": "ARM", "type": "stock", "themes": ["AI算力", "CPU"]},
+    {"symbol": "MRVL", "type": "stock", "themes": ["ASIC", "网络交换"]},
+    {"symbol": "ANET", "type": "stock", "themes": ["网络交换", "数据中心"]},
+    {"symbol": "SMCI", "type": "stock", "themes": ["AI服务器", "数据中心"]},
+    {"symbol": "DELL", "type": "stock", "themes": ["AI服务器", "数据中心"]},
+    {"symbol": "HPE", "type": "stock", "themes": ["AI服务器", "网络交换"]},
+    {"symbol": "VRT", "type": "stock", "themes": ["数据中心", "电力与散热"]},
+    {"symbol": "WDC", "type": "stock", "themes": ["NAND/SSD", "存储"]},
+    {"symbol": "STX", "type": "stock", "themes": ["存储", "数据中心"]},
+    {"symbol": "LRCX", "type": "stock", "themes": ["半导体设备", "存储"]},
+    {"symbol": "AMAT", "type": "stock", "themes": ["半导体设备", "晶圆代工"]},
+    {"symbol": "ASML", "type": "stock", "themes": ["半导体设备", "晶圆代工"]},
+    {"symbol": "KLAC", "type": "stock", "themes": ["半导体设备", "晶圆代工"]},
+    {"symbol": "COIN", "type": "stock", "themes": ["BTC相关上市公司"]},
+    {"symbol": "MSTR", "type": "stock", "themes": ["BTC相关上市公司"]},
+    {"symbol": "MARA", "type": "stock", "themes": ["BTC相关上市公司"]},
+    {"symbol": "RIOT", "type": "stock", "themes": ["BTC相关上市公司"]},
+    {"symbol": "CLSK", "type": "stock", "themes": ["BTC相关上市公司"]}
+  ],
+  "manual_assets": []
+}

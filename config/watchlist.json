@@ -1,6 +1,6 @@
 {
   "assets": [
-    {"symbol": "BTC", "type": "crypto", "provider_symbol": "BTCUSDT"},
+    {"symbol": "BTC-USD", "type": "crypto", "provider_symbol": "BTCUSDT"},
     {"symbol": "QQQ", "type": "etf"},
     {"symbol": "NVDA", "type": "stock", "cik": "0001045810"},
     {"symbol": "MSFT", "type": "stock", "cik": "0000789019"},

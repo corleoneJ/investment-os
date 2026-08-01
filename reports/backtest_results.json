@@ -1,0 +1,230 @@
+{
+  "generated_at": "2026-08-01T03:39:13.123675+00:00",
+  "metrics": {
+    "case_count": 7,
+    "usable_count": 7,
+    "hit_rate_20d": 0.42857142857142855,
+    "profit_loss_ratio_20d": 2.4287681878468255,
+    "false_positive_rate": 0.5714285714285714,
+    "score_return_correlation_20d": -0.5875334194623233,
+    "high_opportunity_high_risk": {
+      "count": 1,
+      "average_20d_return_pct": 16.421344080166822
+    },
+    "by_data_quality": {
+      "count": 7,
+      "average_20d_return_pct": 2.989438557348967
+    }
+  },
+  "cases": [
+    {
+      "id": "meta_ai_capex_2024q1",
+      "type": "大型科技财报后AI产业链联动",
+      "event_date": "2024-04-25",
+      "symbol": "NVDA",
+      "title": "Meta披露2024年一季度业绩与资本开支展望后的AI产业链观察",
+      "source_url": "https://investor.atmeta.com/investor-news/press-release-details/2024/Meta-Reports-First-Quarter-2024-Results/default.aspx",
+      "status": "OK",
+      "signal": {
+        "symbol": "NVDA",
+        "signal_date": "2024-04-25",
+        "used_until": "2024-04-25",
+        "score": 59,
+        "opportunity_score": 50,
+        "risk_score": 25,
+        "data_quality": 85,
+        "reasons": [
+          "RSI位置适中 +10"
+        ]
+      },
+      "returns_pct": {
+        "1": 6.175569503917644,
+        "5": 3.854435827203706,
+        "20": 25.61598272768384
+      },
+      "maximum_favorable_excursion_pct": 28.666854034561993,
+      "maximum_adverse_excursion_pct": -1.6664324567975175,
+      "no_lookahead_evidence": "评分仅使用截至 2024-04-25 的K线"
+    },
+    {
+      "id": "mu_memory_2024q3",
+      "type": "存储板块行情",
+      "event_date": "2024-09-26",
+      "symbol": "MU",
+      "title": "Micron 2024财年第四季度业绩后的存储周期观察",
+      "source_url": "https://investors.micron.com/quarterly-results",
+      "status": "OK",
+      "signal": {
+        "symbol": "MU",
+        "signal_date": "2024-09-26",
+        "used_until": "2024-09-26",
+        "score": 62,
+        "opportunity_score": 55,
+        "risk_score": 25,
+        "data_quality": 85,
+        "reasons": [
+          "信号日放量 +15"
+        ]
+      },
+      "returns_pct": {
+        "1": -2.1659968264550855,
+        "5": -7.335272806755588,
+        "20": -2.7575526529262095
+      },
+      "maximum_favorable_excursion_pct": 3.8769587210723655,
+      "maximum_adverse_excursion_pct": -9.956311508436455,
+      "no_lookahead_evidence": "评分仅使用截至 2024-09-26 的K线"
+    },
+    {
+      "id": "cpi_2024_06",
+      "type": "CPI/FOMC冲击",
+      "event_date": "2024-06-12",
+      "symbol": "QQQ",
+      "title": "美国2024年5月CPI发布日",
+      "source_url": "https://www.bls.gov/news.release/archives/cpi_06122024.htm",
+      "status": "OK",
+      "signal": {
+        "symbol": "QQQ",
+        "signal_date": "2024-06-12",
+        "used_until": "2024-06-12",
+        "score": 58,
+        "opportunity_score": 65,
+        "risk_score": 55,
+        "data_quality": 85,
+        "reasons": [
+          "信号日前趋势向上 +25",
+          "RSI过热，风险 +30"
+        ]
+      },
+      "returns_pct": {
+        "1": 0.5420241183805352,
+        "5": 1.543816812916976,
+        "20": 4.359382831131486
+      },
+      "maximum_favorable_excursion_pct": 6.194241378309395,
+      "maximum_adverse_excursion_pct": -0.0695953973454344,
+      "no_lookahead_evidence": "评分仅使用截至 2024-06-12 的K线"
+    },
+    {
+      "id": "btc_etf_launch_2024",
+      "type": "BTC ETF大额流入或流出",
+      "event_date": "2024-01-11",
+      "symbol": "BTC-USD",
+      "title": "美国现货比特币ETF开始交易后的价格观察",
+      "source_url": "https://www.sec.gov/newsroom/speeches-statements/gensler-statement-spot-bitcoin-011023",
+      "status": "OK",
+      "signal": {
+        "symbol": "BTC-USD",
+        "signal_date": "2024-01-11",
+        "used_until": "2024-01-11",
+        "score": 85,
+        "opportunity_score": 90,
+        "risk_score": 25,
+        "data_quality": 85,
+        "reasons": [
+          "信号日前趋势向上 +25",
+          "信号日放量 +15",
+          "RSI位置适中 +10"
+        ]
+      },
+      "returns_pct": {
+        "1": -7.581464687080208,
+        "5": -6.930641855957509,
+        "20": -8.164968571293297
+      },
+      "maximum_favorable_excursion_pct": 0.27939342688738655,
+      "maximum_adverse_excursion_pct": -16.922429803717797,
+      "no_lookahead_evidence": "评分仅使用截至 2024-01-11 的K线"
+    },
+    {
+      "id": "nvda_spike_2024q1",
+      "type": "单日暴涨后回撤",
+      "event_date": "2024-02-22",
+      "symbol": "NVDA",
+      "title": "NVIDIA财报后单日大幅波动",
+      "source_url": "https://investor.nvidia.com/financial-info/financial-reports-and-results/default.aspx",
+      "status": "OK",
+      "signal": {
+        "symbol": "NVDA",
+        "signal_date": "2024-02-22",
+        "used_until": "2024-02-22",
+        "score": 59,
+        "opportunity_score": 80,
+        "risk_score": 80,
+        "data_quality": 85,
+        "reasons": [
+          "信号日前趋势向上 +25",
+          "信号日放量 +15",
+          "RSI过热，风险 +30",
+          "20日涨幅过大，风险 +25"
+        ]
+      },
+      "returns_pct": {
+        "1": 0.35524118446885744,
+        "5": 0.7308531956989439,
+        "20": 16.421344080166822
+      },
+      "maximum_favorable_excursion_pct": 24.016398466971435,
+      "maximum_adverse_excursion_pct": -1.7991316024380088,
+      "no_lookahead_evidence": "评分仅使用截至 2024-02-22 的K线"
+    },
+    {
+      "id": "qqq_false_breakout_2022",
+      "type": "假突破",
+      "event_date": "2022-08-16",
+      "symbol": "QQQ",
+      "title": "QQQ阶段高点后的突破有效性检验",
+      "source_url": "https://www.nasdaq.com/market-activity/etf/qqq/historical",
+      "status": "OK",
+      "signal": {
+        "symbol": "QQQ",
+        "signal_date": "2022-08-16",
+        "used_until": "2022-08-16",
+        "score": 68,
+        "opportunity_score": 65,
+        "risk_score": 25,
+        "data_quality": 85,
+        "reasons": [
+          "信号日前趋势向上 +25"
+        ]
+      },
+      "returns_pct": {
+        "1": -1.1406068854114881,
+        "5": -5.471287089975152,
+        "20": -10.909473977721284
+      },
+      "maximum_favorable_excursion_pct": -0.2558101921988354,
+      "maximum_adverse_excursion_pct": -12.462382272251737,
+      "no_lookahead_evidence": "评分仅使用截至 2022-08-16 的K线"
+    },
+    {
+      "id": "intel_value_trap_2024",
+      "type": "价值陷阱案例",
+      "event_date": "2024-04-26",
+      "symbol": "INTC",
+      "title": "低估值与基本面恶化并存的价值陷阱检验",
+      "source_url": "https://www.intc.com/filings-reports/quarterly-results",
+      "status": "OK",
+      "signal": {
+        "symbol": "INTC",
+        "signal_date": "2024-04-26",
+        "used_until": "2024-04-26",
+        "score": 62,
+        "opportunity_score": 55,
+        "risk_score": 25,
+        "data_quality": 85,
+        "reasons": [
+          "信号日放量 +15"
+        ]
+      },
+      "returns_pct": {
+        "1": -1.631112183512784,
+        "5": -3.074026248540096,
+        "20": -3.6386445355985897
+      },
+      "maximum_favorable_excursion_pct": 1.6938488782749506,
+      "maximum_adverse_excursion_pct": -6.744039131519763,
+      "no_lookahead_evidence": "评分仅使用截至 2024-04-26 的K线"
+    }
+  ]
+}

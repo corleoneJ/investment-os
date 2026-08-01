@@ -1,0 +1,16 @@
+labels: ["明显低估", "相对便宜", "合理", "偏贵", "明显过热", "周期数据失真", "数据不足"]
+growth_tech:
+  cheap_ps: 5
+  expensive_ps: 18
+  cheap_fcf_yield_pct: 4
+  expensive_fcf_yield_pct: 1
+  strong_revenue_growth_pct: 20
+cyclical:
+  symbols: [MU, SNDK, WDC, STX, LRCX, AMAT, KLAC]
+  low_pe_warning: 12
+  margin_peak_percentile: 80
+crypto:
+  symbols: [BTC-USD]
+  long_ema_period: 200
+  overheat_distance_pct: 35
+max_fundamental_symbols_per_scan: 15

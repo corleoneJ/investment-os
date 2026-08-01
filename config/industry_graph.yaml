@@ -1,0 +1,72 @@
+events:
+  AI_CAPEX_UP:
+    keywords: ["ai capex", "capital expenditure", "ai infrastructure", "data center", "资本开支", "数据中心"]
+    industry: AI基础设施
+    hypothesis: "云厂商增加AI资本开支可能沿供应链传导，但不代表订单已经确认。"
+    beneficiaries:
+      GPU:
+        weight: 1.0
+        lag_days: [0, 20]
+        symbols: [NVDA, AMD]
+      ASIC:
+        weight: 0.85
+        lag_days: [5, 60]
+        symbols: [AVGO, MRVL]
+      NETWORKING:
+        weight: 0.8
+        lag_days: [5, 45]
+        symbols: [ANET, AVGO, MRVL]
+      FOUNDRY:
+        weight: 0.75
+        lag_days: [20, 120]
+        symbols: [TSM]
+      DRAM_HBM:
+        weight: 0.8
+        lag_days: [20, 120]
+        symbols: [MU]
+      NAND_SSD:
+        weight: 0.65
+        lag_days: [30, 180]
+        symbols: [SNDK, WDC]
+      SERVER_POWER:
+        weight: 0.65
+        lag_days: [10, 90]
+        symbols: [SMCI, DELL, VRT]
+  MEMORY_CYCLE_UP:
+    keywords: ["memory price increase", "dram price", "nand price", "hbm demand", "存储涨价", "dram", "nand", "hbm"]
+    industry: 存储周期
+    hypothesis: "存储价格和需求改善可能提升盈利，但周期高点的低PE可能失真。"
+    beneficiaries:
+      DRAM_HBM:
+        weight: 1.0
+        lag_days: [0, 90]
+        symbols: [MU]
+      NAND_SSD:
+        weight: 0.9
+        lag_days: [0, 120]
+        symbols: [SNDK, WDC]
+      EQUIPMENT:
+        weight: 0.55
+        lag_days: [60, 240]
+        symbols: [LRCX, AMAT, KLAC]
+  BTC_LIQUIDITY_UP:
+    keywords: ["bitcoin etf inflow", "btc etf inflow", "stablecoin liquidity", "比特币etf流入"]
+    industry: BTC流动性
+    hypothesis: "ETF或稳定币流动性改善可能支持BTC及相关上市公司，但代理股票风险通常更高。"
+    beneficiaries:
+      SPOT_ASSET:
+        weight: 1.0
+        lag_days: [0, 10]
+        symbols: [BTC-USD]
+      EXCHANGE:
+        weight: 0.7
+        lag_days: [0, 20]
+        symbols: [COIN]
+      TREASURY_PROXY:
+        weight: 0.55
+        lag_days: [0, 20]
+        symbols: [MSTR]
+      MINERS:
+        weight: 0.45
+        lag_days: [0, 30]
+        symbols: [MARA, RIOT, CLSK]

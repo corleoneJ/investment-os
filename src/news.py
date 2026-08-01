@@ -12,6 +12,7 @@ from typing import Any
 from urllib.parse import quote_plus
 from xml.etree import ElementTree
 
+from .data_quality import ProviderState, ProviderStatus, provider_status
 from .market_data import build_session
 
 LOGGER = logging.getLogger(__name__)
@@ -47,6 +48,22 @@ class NewsItem:
     category: str
     is_major: bool
     is_negative: bool
+    provider: ProviderStatus | None = None
+
+    def __post_init__(self) -> None:
+        if self.provider is None:
+            object.__setattr__(
+                self,
+                "provider",
+                provider_status(
+                    status=ProviderState.HEALTHY,
+                    source=self.source,
+                    source_url=self.url,
+                    data_timestamp=self.published_at,
+                    confidence=90 if self.source in {"美国 SEC EDGAR", "美联储", "美国劳工统计局"} else 60,
+                    is_fallback=self.source not in {"美国 SEC EDGAR", "美联储", "美国劳工统计局"},
+                ),
+            )
 
     @property
     def fingerprint(self) -> str:

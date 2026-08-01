@@ -1,4 +1,4 @@
-name: Investment OS V3 AI决策
+name: Investment OS V4 实时决策
 
 on:
   workflow_dispatch:
@@ -40,6 +40,9 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
 
+      - name: 校验配置
+        run: python -m src.config_validator
+
       - name: 恢复决策统计状态
         id: state-cache
         uses: actions/cache/restore@v4
@@ -49,7 +52,7 @@ jobs:
           restore-keys: |
             investment-os-state-${{ runner.os }}-
 
-      - name: 扫描市场
+      - name: 扫描市场（内置超时、重试与退避）
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
