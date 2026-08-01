@@ -7,7 +7,7 @@ on:
   pull_request:
 
 concurrency:
-  group: investment-os-validate-${{ github.ref }}
+  group: investment-os-config-test-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

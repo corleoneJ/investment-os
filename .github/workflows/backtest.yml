@@ -5,7 +5,7 @@ on:
 
 concurrency:
   group: investment-os-backtest
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read

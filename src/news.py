@@ -25,6 +25,7 @@ MAJOR_TERMS = (
     "accounting", "recall", "outage", "accident", "cpi", "nonfarm", "fomc",
     "powell", "rate decision", "monetary policy", "regulation", "bitcoin etf", "btc etf",
     "inflow", "outflow", "财报", "指引", "资本开支", "并购", "调查", "诉讼",
+    "ppi", "producer price", "unemployment rate", "jobless", "fed speech",
 )
 MAINSTREAM_SOURCES = (
     "reuters", "associated press", "ap news", "bloomberg", "cnbc", "financial times",
@@ -91,6 +92,33 @@ class NewsClient:
             for asset in assets
             if asset.get("cik")
         )
+        return self._run_jobs(jobs)
+
+    def fetch_company_news(self, assets: list[dict[str, Any]]) -> list[NewsItem]:
+        """10分钟新闻任务：公司、BTC ETF、监管与产业链新闻，不重复抓SEC。"""
+        return self._run_jobs([
+            ("公司与市场重大新闻", lambda: self._fetch_google_news([a["symbol"] for a in assets]))
+        ])
+
+    def fetch_earnings_sec(self, assets: list[dict[str, Any]]) -> list[NewsItem]:
+        """30分钟任务：只抓有CIK的公司SEC重大文件。"""
+        jobs = [
+            (f"SEC {asset['symbol']}", lambda item=asset: self._fetch_sec(item))
+            for asset in assets
+            if asset.get("cik")
+        ]
+        return self._run_jobs(jobs)
+
+    def fetch_macro(self, assets: list[dict[str, Any]]) -> list[NewsItem]:
+        """每小时任务：只抓美联储和BLS官方宏观发布。"""
+        symbols = tuple(asset["symbol"] for asset in assets)
+        return self._run_jobs([
+            ("美联储", lambda: self._fetch_fed(symbols)),
+            ("美联储讲话", lambda: self._fetch_fed_speeches(symbols)),
+            ("美国劳工统计局", lambda: self._fetch_bls(symbols)),
+        ])
+
+    def _run_jobs(self, jobs: list[tuple[str, Any]]) -> list[NewsItem]:
         items: list[NewsItem] = []
         with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(job): name for name, job in jobs}
@@ -145,6 +173,14 @@ class NewsClient:
             source_default="美联储",
             assets=symbols,
             category="宏观/美联储",
+        )
+
+    def _fetch_fed_speeches(self, symbols: tuple[str, ...]) -> list[NewsItem]:
+        return self._fetch_rss(
+            "https://www.federalreserve.gov/feeds/speeches.xml",
+            source_default="美联储讲话",
+            assets=symbols,
+            category="宏观/美联储讲话",
         )
 
     def _fetch_bls(self, symbols: tuple[str, ...]) -> list[NewsItem]:

@@ -44,7 +44,7 @@ flowchart LR
 
 | 模块 | 职责 |
 | --- | --- |
-| Scanner | 并行扫描核心资产、候选池、新闻和未来事件 |
+| Scanner | 按工作流频率拆分行情、新闻、财报SEC和宏观采集 |
 | Industry Graph | 通过 YAML 配置事件、行业、业务环节、公司、方向、权重和时滞 |
 | Alpha Finder | 区分潜在补涨、弱势未涨和已充分定价 |
 | Flow Analyzer | 用相对成交量、OBV、VWAP和成交额代理推断资金；明确数据时效 |
@@ -129,6 +129,9 @@ python -m src.config_validator
 python -m unittest -v
 pytest -q
 python -m src.main --mode realtime --dry-run
+python -m src.main --mode news --dry-run
+python -m src.main --mode earnings --dry-run
+python -m src.main --mode macro --dry-run
 python -m src.main --mode daily --dry-run
 python -m src.backtest
 ```
@@ -139,16 +142,19 @@ python -m src.backtest
 
 ## GitHub Actions
 
-- `realtime-monitor.yml`：手动或 `*/5 * * * *`，Python 3.12，2分钟超时，concurrency防重叠，支持 `dry_run` 和 `send_test_message`。
-- `daily-summary.yml`：手动或 UTC 12:05，即北京时间20:05。
-- `validate-and-test.yml`：配置校验、`unittest` 和 V3兼容性 `pytest`。
+- `realtime-monitor.yml`：手动或 `*/5 * * * *`，3分钟超时；只扫描 BTC-USD、SNDK、NVDA、MSFT、META、QQQ 及 `high_priority=true` 资产。
+- `news-event-scan.yml`：手动或 `*/10 * * * *`，5分钟超时；扫描公司重大新闻、AI CapEx、并购、诉讼、监管、BTC ETF和产业链事件。
+- `earnings-sec-scan.yml`：手动或 `*/30 * * * *`，8分钟超时；扫描未来7天财报与SEC重大文件。
+- `macro-scan.yml`：手动或 `0 * * * *`，5分钟超时；扫描官方宏观发布/日历、DXY和美国10年期收益率代理。
+- `daily-summary.yml`：手动或 UTC 12:05，即北京时间20:05，10分钟超时。
+- `config-test.yml`：push到main、PR或手动运行，执行配置校验、`unittest` 和 V3兼容性 `pytest`。
 - `backtest.yml`：手动历史回放并上传 `reports/` artifact。
 
 GitHub Actions 是准实时而非秒级实时，计划任务可能受平台负载影响而延迟。网络请求均有 timeout、retry、backoff；单源失败不阻断整轮。
 
 ## 飞书全量观察与恢复防轰炸
 
-V4观察期保持关闭频率阈值，同轮同资产仍强制合并为一条消息。候选池只有进入有意义的 Alpha Top5 才附加发送；核心资产均发送。状态保存在 `state/alerts.json`，包含早期价格、评分、建议和总结，用于每日复盘。
+V4观察期保持关闭评分和频率阈值，但技术性重复仍被禁止：新闻、财报SEC和宏观工作流为事件生成稳定 `event_id`，同一事件可由不同工作流补充，发送成功后只标记一次；单轮新事件合并为一条飞书消息。实时资产决策仍按资产合并。统一状态保存在 `state/alerts.json`，通过 `investment-os-shared-state-` Actions cache 在工作流之间共享。
 
 恢复防轰炸时，可在 `AlertManager.deliver_v4` 发送前重新启用 `StateStore.should_send_alert`，建议按“资产+决策类型”设置60分钟冷却，并只允许信号显著增强时重发；同时恢复新闻 fingerprint 去重。恢复前应先用状态日志统计误报和消息量。
 
@@ -167,7 +173,7 @@ V4观察期保持关闭频率阈值，同轮同资产仍强制合并为一条消
 
 ## 暂停监控
 
-进入 GitHub Actions，分别对“Investment OS V4 实时决策”和“Investment OS V4 每日决策”选择 `Disable workflow`。恢复时选择 `Enable workflow`。也可仅移除 schedule 后保留手动运行。
+进入 GitHub Actions，对实时、新闻、财报SEC、宏观或每日工作流分别选择 `Disable workflow`；回测和配置测试不受影响。恢复时选择 `Enable workflow`。
 
 ## 已知限制
 
@@ -179,6 +185,7 @@ V4观察期保持关闭频率阈值，同轮同资产仍强制合并为一条消
 - 资金流主要是量价代理，不是账户级或机构实时交易数据。
 - 回测样本少、事件文本尚未进入历史评分，结果只验证规则工程完整性。
 - 全量观察模式消息量较高，可能触及飞书限流。
+- Actions cache 不是事务数据库：不同并发组恰好同时写状态时存在最后一次缓存获胜的竞态；稳定 event_id 可降低重复，但不能提供数据库级原子保证。
 - 远端发布依赖 GitHub 凭据和仓库权限；推送前应确认工作树干净并禁止把 Secret 写入仓库。
 
 更多设计说明见 `ARCHITECTURE.md`、`SCORING.md`、`DATA_SOURCES.md`、`BACKTESTING.md` 和 `CHANGELOG.md`。

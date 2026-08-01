@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -82,8 +83,15 @@ class AlertManager:
                 )
                 sent += 1
                 continue
+            fingerprint = decision_fingerprint(decision)
+            if self.state.decision_is_duplicate(decision.symbol, fingerprint):
+                LOGGER.info("技术去重：%s 决策内容未变化，本轮不重复发送。", decision.symbol)
+                continue
             if self.feishu.send(message):
                 sent += 1
+                self.state.record_decision_fingerprint(
+                    decision.symbol, fingerprint, now
+                )
                 snapshot = decision.snapshot
                 self.state.record_v4_decision(
                     asset=decision.symbol,
@@ -100,6 +108,21 @@ class AlertManager:
                 failed += 1
         self.state.save()
         return sent, failed
+
+
+def decision_fingerprint(decision: V4AssetDecision) -> str:
+    catalyst_id = decision.catalyst.fingerprint if decision.catalyst else "无催化剂"
+    parts = (
+        decision.symbol,
+        decision.score.action,
+        str(decision.score.investment_score),
+        str(decision.score.opportunity_score),
+        str(decision.score.risk_score),
+        decision.flow.flow_direction,
+        decision.valuation.valuation_label,
+        catalyst_id,
+    )
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
 
 
 def format_v4_message(decision: V4AssetDecision, generated_at: datetime) -> str:

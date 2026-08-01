@@ -1,15 +1,15 @@
 {
   "assets": [
-    {"symbol": "BTC-USD", "type": "crypto", "provider_symbol": "BTCUSDT"},
-    {"symbol": "QQQ", "type": "etf"},
-    {"symbol": "NVDA", "type": "stock", "cik": "0001045810"},
-    {"symbol": "MSFT", "type": "stock", "cik": "0000789019"},
-    {"symbol": "META", "type": "stock", "cik": "0001326801"},
+    {"symbol": "BTC-USD", "type": "crypto", "provider_symbol": "BTCUSDT", "high_priority": true},
+    {"symbol": "QQQ", "type": "etf", "high_priority": true},
+    {"symbol": "NVDA", "type": "stock", "cik": "0001045810", "high_priority": true},
+    {"symbol": "MSFT", "type": "stock", "cik": "0000789019", "high_priority": true},
+    {"symbol": "META", "type": "stock", "cik": "0001326801", "high_priority": true},
     {"symbol": "GOOG", "type": "stock", "cik": "0001652044"},
     {"symbol": "AMZN", "type": "stock", "cik": "0001018724"},
     {"symbol": "AVGO", "type": "stock", "cik": "0001730168"},
     {"symbol": "TSM", "type": "stock", "cik": "0001046179"},
-    {"symbol": "SNDK", "type": "stock", "cik": "0002023554"},
+    {"symbol": "SNDK", "type": "stock", "cik": "0002023554", "high_priority": true},
     {"symbol": "MU", "type": "stock", "cik": "0000723125"}
   ]
 }

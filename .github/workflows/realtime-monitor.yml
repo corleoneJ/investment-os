@@ -18,8 +18,8 @@ on:
     - cron: "*/5 * * * *"
 
 concurrency:
-  group: investment-os-monitor-state
-  cancel-in-progress: false
+  group: investment-os-realtime
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -27,7 +27,7 @@ permissions:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -44,14 +44,14 @@ jobs:
       - name: 校验配置
         run: python -m src.config_validator
 
-      - name: 恢复决策统计状态
+      - name: 恢复统一事件与决策状态
         id: state-cache
         uses: actions/cache/restore@v4
         with:
           path: state/alerts.json
-          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}
+          key: investment-os-shared-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            investment-os-state-${{ runner.os }}-
+            investment-os-shared-state-
 
       - name: 扫描市场（内置超时、重试与退避）
         env:
@@ -66,9 +66,9 @@ jobs:
           ${{ inputs.dry_run && '--dry-run' || '' }}
           ${{ inputs.send_test_message && '--test-message' || '' }}
 
-      - name: 保存决策统计状态
+      - name: 保存统一事件与决策状态
         if: always() && hashFiles('state/alerts.json') != ''
         uses: actions/cache/save@v4
         with:
           path: state/alerts.json
-          key: investment-os-state-${{ runner.os }}-${{ github.run_id }}
+          key: investment-os-shared-state-${{ github.run_id }}-${{ github.run_attempt }}

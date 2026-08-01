@@ -9,20 +9,27 @@ from pathlib import Path
 
 from .alert_manager import AlertManager
 from .daily_summary import build_v4_daily_summary
+from .event_pipeline import EventScanManager
 from .feishu import FeishuClient
-from .market_data import MarketSnapshot
-from .scanner import Scanner, ScanResult
+from .future_events import FutureEventScanner
+from .market_data import MarketDataClient, MarketSnapshot
+from .news import NewsClient
 from .state import StateStore
 from .v4_engine import V4Engine, V4Report
 
 LOGGER = logging.getLogger("investment_os")
 UTC = timezone.utc
 ROOT = Path(__file__).resolve().parents[1]
+REALTIME_DEFAULTS = {"BTC-USD", "SNDK", "NVDA", "MSFT", "META", "QQQ"}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Investment OS V4 AI投资决策系统")
-    parser.add_argument("--mode", choices=("realtime", "daily"), default="realtime")
+    parser.add_argument(
+        "--mode",
+        choices=("realtime", "news", "earnings", "macro", "daily"),
+        default="realtime",
+    )
     parser.add_argument("--state", default=str(ROOT / "state" / "alerts.json"))
     parser.add_argument("--dry-run", action="store_true", help="只分析并生成消息，不发送")
     parser.add_argument("--test-message", action="store_true", help="发送一条飞书连通性测试消息")
@@ -42,28 +49,36 @@ def load_assets() -> tuple[list[dict], list[dict]]:
     return core, candidates[:maximum]
 
 
-def analyze(
-    assets: list[dict], candidate_assets: list[dict]
-) -> tuple[ScanResult, V4Report]:
-    scan_result = Scanner().scan(assets, candidate_assets)
+def load_realtime_assets(assets: list[dict]) -> list[dict]:
+    return [
+        asset
+        for asset in assets
+        if asset["symbol"] in REALTIME_DEFAULTS or asset.get("high_priority") is True
+    ]
+
+
+def analyze_market(
+    assets: list[dict], state: StateStore
+) -> tuple[dict[str, MarketSnapshot], V4Report]:
+    market_assets = [*assets, {"symbol": "DX-Y.NYB", "type": "macro"}]
+    snapshots = MarketDataClient().fetch_all(market_assets)
     report = V4Engine(ROOT).build(
         [item["symbol"] for item in assets],
-        scan_result.snapshots,
-        scan_result.news,
-        scan_result.future_events,
+        snapshots,
+        state.cached_news(),
+        state.cached_future_events(),
     )
-    return scan_result, report
+    return snapshots, report
 
 
 def run_realtime(
     assets: list[dict],
-    candidate_assets: list[dict],
     state: StateStore,
     feishu: FeishuClient,
     dry_run: bool,
 ) -> tuple[int, int]:
-    scan_result, report = analyze(assets, candidate_assets)
-    _log_data_quality([*assets, *candidate_assets], scan_result.snapshots)
+    snapshots, report = analyze_market(assets, state)
+    _log_data_quality(assets, snapshots)
     sent, failed = AlertManager(feishu, state).deliver_v4(report, dry_run=dry_run)
     _log_decision_center(report)
     return sent, failed
@@ -76,10 +91,11 @@ def run_daily(
     feishu: FeishuClient,
     dry_run: bool,
 ) -> tuple[int, int]:
-    scan_result, report = analyze(assets, candidate_assets)
+    all_assets = list({item["symbol"]: item for item in [*assets, *candidate_assets]}.values())
+    snapshots, report = analyze_market(all_assets, state)
     visible = {
         key: value
-        for key, value in scan_result.snapshots.items()
+        for key, value in snapshots.items()
         if key != "DX-Y.NYB"
     }
     message = build_v4_daily_summary(
@@ -94,6 +110,54 @@ def run_daily(
     sent = feishu.send(message)
     state.save()
     return (1 if sent else 0), (0 if sent else 1)
+
+
+def run_news_events(
+    assets: list[dict],
+    state: StateStore,
+    feishu: FeishuClient,
+    dry_run: bool,
+) -> tuple[int, int]:
+    news = NewsClient().fetch_company_news(assets)
+    sent, failed, _ = EventScanManager(ROOT, feishu, state).deliver(
+        "news", "新闻与产业链事件", news, [], dry_run=dry_run
+    )
+    return sent, failed
+
+
+def run_earnings_sec(
+    assets: list[dict],
+    state: StateStore,
+    feishu: FeishuClient,
+    dry_run: bool,
+) -> tuple[int, int]:
+    news = NewsClient().fetch_earnings_sec(assets)
+    future = FutureEventScanner().scan_earnings(assets)
+    sent, failed, _ = EventScanManager(ROOT, feishu, state).deliver(
+        "earnings-sec", "财报与SEC事件", news, future, dry_run=dry_run
+    )
+    return sent, failed
+
+
+def run_macro(
+    assets: list[dict],
+    state: StateStore,
+    feishu: FeishuClient,
+    dry_run: bool,
+) -> tuple[int, int]:
+    news = NewsClient().fetch_macro(assets)
+    future = FutureEventScanner().scan_macro(assets)
+    wanted = [asset for asset in assets if asset["symbol"] in {"BTC-USD", "QQQ"}]
+    context_assets = [
+        *wanted,
+        {"symbol": "DX-Y.NYB", "type": "macro"},
+        {"symbol": "^TNX", "type": "macro"},
+    ]
+    context = MarketDataClient().fetch_all(context_assets)
+    sent, failed, _ = EventScanManager(ROOT, feishu, state).deliver(
+        "macro", "宏观风险事件", news, future, dry_run=dry_run, market_context=context
+    )
+    return sent, failed
 
 
 def _log_data_quality(assets: list[dict], snapshots: dict[str, MarketSnapshot]) -> None:
@@ -123,6 +187,8 @@ def main() -> int:
     args = parse_args()
     started = datetime.now(UTC)
     assets, candidate_assets = load_assets()
+    all_assets = list({item["symbol"]: item for item in [*assets, *candidate_assets]}.values())
+    realtime_assets = load_realtime_assets(assets)
     state = StateStore(args.state)
     state.load()
     feishu = FeishuClient()
@@ -139,13 +205,25 @@ def main() -> int:
     try:
         if args.mode == "daily":
             sent, failed = run_daily(assets, candidate_assets, state, feishu, args.dry_run)
+            scanned_count = len(all_assets)
+        elif args.mode == "news":
+            sent, failed = run_news_events(all_assets, state, feishu, args.dry_run)
+            scanned_count = len(all_assets)
+        elif args.mode == "earnings":
+            sent, failed = run_earnings_sec(all_assets, state, feishu, args.dry_run)
+            scanned_count = len(all_assets)
+        elif args.mode == "macro":
+            sent, failed = run_macro(assets, state, feishu, args.dry_run)
+            scanned_count = 4
         else:
-            sent, failed = run_realtime(assets, candidate_assets, state, feishu, args.dry_run)
+            sent, failed = run_realtime(realtime_assets, state, feishu, args.dry_run)
+            scanned_count = len(realtime_assets)
     except Exception:
         LOGGER.exception("本次V4分析出现未处理错误（敏感响应内容不会记录）。")
         return 1
     LOGGER.info("扫描时间：%s", started.isoformat())
-    LOGGER.info("扫描资产数量：%d（核心%d，候选%d）", len(assets) + len(candidate_assets), len(assets), len(candidate_assets))
+    LOGGER.info("运行模式：%s", args.mode)
+    LOGGER.info("本模式扫描资产数量：%d", scanned_count)
     LOGGER.info("生成并发送消息数量：%d", sent)
     LOGGER.info("发送失败或因未配置跳过数量：%d", failed)
     LOGGER.info("V4观察模式：频率限制=关闭，评分发送门槛=关闭；同轮同资产消息已合并。")

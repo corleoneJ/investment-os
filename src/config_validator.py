@@ -11,6 +11,7 @@ from .investment_score import V4_ACTIONS, InvestmentScoreCalculator
 from .valuation_engine import VALUATION_LABELS
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIRED_REALTIME = {"BTC-USD", "SNDK", "NVDA", "MSFT", "META", "QQQ"}
 
 
 def validate(root: Path = ROOT) -> list[str]:
@@ -26,6 +27,9 @@ def validate(root: Path = ROOT) -> list[str]:
     candidate_symbols = [item.get("symbol") for item in candidate_assets]
     if not core:
         errors.append("核心监控列表不能为空")
+    missing_realtime = REQUIRED_REALTIME - set(core)
+    if missing_realtime:
+        errors.append(f"实时高优先级必选资产缺失：{sorted(missing_realtime)}")
     if len(candidate_symbols) > min(50, int(candidates.get("max_symbols", 50))):
         errors.append("候选池超过配置上限或50个硬上限")
     if len(core + candidate_symbols) != len(set(core + candidate_symbols)):

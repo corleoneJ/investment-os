@@ -74,6 +74,34 @@ class FutureEventScanner:
         unique = {(event.name, event.event_time.isoformat()): event for event in result}
         return sorted(unique.values(), key=lambda event: event.event_time)
 
+    def scan_earnings(
+        self, assets: list[dict[str, Any]], now: datetime | None = None
+    ) -> list[FutureEvent]:
+        current = (now or datetime.now(UTC)).astimezone(UTC)
+        symbols = tuple(asset["symbol"] for asset in assets)
+        try:
+            return sorted(self._fetch_earnings(current, symbols), key=lambda event: event.event_time)
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning("未来财报源失败（%s）", type(exc).__name__)
+            return []
+
+    def scan_macro(
+        self, assets: list[dict[str, Any]], now: datetime | None = None
+    ) -> list[FutureEvent]:
+        current = (now or datetime.now(UTC)).astimezone(UTC)
+        symbols = tuple(asset["symbol"] for asset in assets)
+        result: list[FutureEvent] = []
+        for name, fetcher in (
+            ("BLS未来事件", self._fetch_bls),
+            ("FOMC未来事件", self._fetch_fomc),
+        ):
+            try:
+                result.extend(fetcher(current, symbols))
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.warning("未来事件源失败：%s（%s）", name, type(exc).__name__)
+        unique = {(event.name, event.event_time.isoformat()): event for event in result}
+        return sorted(unique.values(), key=lambda event: event.event_time)
+
     def _fetch_bls(self, now: datetime, symbols: tuple[str, ...]) -> list[FutureEvent]:
         url = "https://www.bls.gov/schedule/news_release/bls.ics"
         response = self.session.get(url, timeout=self.timeout)
@@ -87,7 +115,16 @@ class FutureEventScanner:
             if not event_time or not _within(event_time, now, self.days):
                 continue
             lowered = summary.lower()
-            if not any(term in lowered for term in ("consumer price", "employment situation", "payroll")):
+            if not any(
+                term in lowered
+                for term in (
+                    "consumer price",
+                    "producer price",
+                    "employment situation",
+                    "payroll",
+                    "unemployment",
+                )
+            ):
                 continue
             events.append(
                 FutureEvent(

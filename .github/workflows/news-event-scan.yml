@@ -1,65 +1,60 @@
-name: Investment OS V4 每日决策
+name: Investment OS V4 新闻与事件扫描
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "仅生成汇总，不发送飞书消息"
+        description: "只生成合并消息，不发送飞书"
+        required: false
+        type: boolean
+        default: false
+      send_test_message:
+        description: "额外发送飞书连通性测试消息"
         required: false
         type: boolean
         default: false
   schedule:
-    # GitHub cron 使用 UTC；北京时间 20:05 = UTC 12:05（中国不实行夏令时）。
-    - cron: "5 12 * * *"
+    - cron: "*/10 * * * *"
 
 concurrency:
-  group: investment-os-daily
+  group: investment-os-news-events
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  summary:
+  news-events:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-
       - name: 配置 Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
-
-      - name: 安装依赖
-        run: pip install -r requirements.txt
-
-      - name: 校验配置
-        run: python -m src.config_validator
-
-      - name: 恢复监控状态
+      - name: 安装依赖并校验配置
+        run: |
+          pip install -r requirements.txt
+          python -m src.config_validator
+      - name: 恢复统一事件与决策状态
         uses: actions/cache/restore@v4
         with:
           path: state/alerts.json
           key: investment-os-shared-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             investment-os-shared-state-
-
-      - name: 生成并发送每日汇总
+      - name: 扫描新闻与产业链事件
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
-          LLM_MODEL: ${{ vars.LLM_MODEL }}
-          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: >-
-          python -m src.main --mode daily
+          python -m src.main --mode news
           ${{ inputs.dry_run && '--dry-run' || '' }}
-
-      - name: 保存监控状态
+          ${{ inputs.send_test_message && '--test-message' || '' }}
+      - name: 保存统一事件与决策状态
         if: always() && hashFiles('state/alerts.json') != ''
         uses: actions/cache/save@v4
         with:
