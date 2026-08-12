@@ -1,4 +1,4 @@
-name: Investment OS V4 宏观扫描
+name: Investment OS V5 宏观风险扫描
 
 on:
   workflow_dispatch:

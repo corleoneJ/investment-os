@@ -1,8 +1,10 @@
-# Investment OS V4
+# Investment OS V5
 
-Investment OS V4 是面向小额长期现货投资者的 AI 投资决策系统。它把事件、产业链、候选标的、资金代理、估值、技术位置和风险过滤串成一条可解释决策链，而不是行情提醒、新闻聚合或“预测必涨”工具。
+Investment OS V5 是面向小额长期现货投资者的交易决策过滤系统。它保留 V4 的数据 Provider、新闻/SEC/宏观扫描、每日汇总和 Feishu 基础设施，在实时交易提醒前新增 V5 Trade Filter Layer：Noise Filter、Market Impact、Price Reaction、Entry Timing、Risk Reward、Trade Grade、Final Action Resolver 和智能 Alert Filtering。
 
 系统不会输出“必涨”“确定翻倍”等结论，不使用合约或杠杆，也不建议重仓押注。默认执行边界是每日约 10 USDT、每月约 300 USDT；数据不足时明确显示“数据暂不可用”并降低置信度。
+
+V5 的核心约束是唯一最终动作 `FINAL_ACTION`：`WAIT_FOR_PULLBACK → WAIT`，`DO_NOT_CHASE → WAIT/AVOID`，`NO_TRADE_VALUE → AVOID`，只有 `ENTRY_CONFIRMED` 且风控通过才允许 `BUY`。机会等级 `S/A/B/C` 只代表机会质量，不等于立即买入。
 
 ## 系统架构
 
@@ -19,9 +21,11 @@ flowchart TD
   F --> I
   H --> I
   I --> J["Ranking + V4 Decision"]
-  J --> K["每资产一条飞书消息"]
-  J --> L["每日汇总与历史复盘"]
-  M["可选 LLM<br/>只润色文字"] --> J
+  J --> K["V5 Trade Filter Layer"]
+  K --> L["FINAL_ACTION"]
+  L --> M["V5 Feishu Formatter"]
+  J --> N["每日汇总与历史复盘"]
+  O["可选 LLM<br/>只润色文字"] --> J
 ```
 
 ## 数据流
@@ -51,6 +55,9 @@ flowchart LR
 | Valuation Engine | 股票多指标估值、存储周期调整、BTC独立估值 |
 | Peer Comparison | 比较增长、质量、估值、动量、资金、风险和数据质量 |
 | Investment Score | 规则化计算机会、风险、综合、置信度和数据质量分 |
+| V5 Trade Filter Layer | 将事件、资金、估值和技术位置统一解析为唯一 FINAL_ACTION |
+| Final Action Resolver | 保证 WAIT_FOR_PULLBACK/DO_NOT_CHASE/NO_TRADE_VALUE 永不绕过为 BUY |
+| V5 Alert Filtering | 只推送 S/A首次机会、A→S、WAIT→BUY、ADD/EXIT和重大AVOID，抑制重复与低价值信息 |
 | Ranking | 生成综合、Alpha、资金、估值、风险和数据不足榜 |
 | Replay / Backtest | 事件日切片回放，验证1/5/20日收益及MFE/MAE |
 | Alert Manager | 同一轮同一资产合并成一条完整消息 |
@@ -138,7 +145,7 @@ python -m src.backtest
 
 `--dry-run` 获取真实公开数据并生成完整决策，但不发送飞书。连通性测试可手动运行实时工作流并设置 `send_test_message=true`；先用 `dry_run=true` 核对结果，再关闭 dry-run。
 
-第一次运行建议：配置 Secret，手动执行“Investment OS V4 配置与测试”，再手动执行实时工作流 dry-run，核对数据更新时间和 Provider 状态，最后只发送连通性测试。不要把测试 Webhook 写入本地文件。
+第一次运行建议：配置 Secret，手动执行“Investment OS V5 配置与测试”，再手动执行实时工作流 dry-run，核对 `FINAL_ACTION`、数据更新时间和 Provider 状态，最后只发送连通性测试。不要把测试 Webhook 写入本地文件。
 
 ## GitHub Actions
 
@@ -152,11 +159,11 @@ python -m src.backtest
 
 GitHub Actions 是准实时而非秒级实时，计划任务可能受平台负载影响而延迟。网络请求均有 timeout、retry、backoff；单源失败不阻断整轮。
 
-## 飞书全量观察与恢复防轰炸
+## V5 智能过滤与防轰炸
 
-V4观察期保持关闭评分和频率阈值，但技术性重复仍被禁止：新闻、财报SEC和宏观工作流为事件生成稳定 `event_id`，同一事件可由不同工作流补充，发送成功后只标记一次；单轮新事件合并为一条飞书消息。实时资产决策仍按资产合并。统一状态保存在 `state/alerts.json`，通过 `investment-os-shared-state-` Actions cache 在工作流之间共享。
+V5 正式线上不再使用“频率限制关闭、评分门槛关闭、所有有意义信息全部发送”的 V4 观察模式。实时飞书只允许 S/A 首次机会、A→S、`ENTRY_CONFIRMED → BUY`、`ADD`、`EXIT`、重大 `AVOID` 或黑天鹅风险进入推送；B/C级、普通新闻、普通价格波动、普通评级变化、重复事件和无交易价值信息会被过滤。
 
-恢复防轰炸时，可在 `AlertManager.deliver_v4` 发送前重新启用 `StateStore.should_send_alert`，建议按“资产+决策类型”设置60分钟冷却，并只允许信号显著增强时重发；同时恢复新闻 fingerprint 去重。恢复前应先用状态日志统计误报和消息量。
+S级 `WAIT_FOR_PULLBACK` 可以发送一次“高质量机会，等待回踩，不建议追涨”；之后只有进入买入区、`FINAL_ACTION` 变化或出现新的实质事件才允许再次推送。统一状态保存在 `state/alerts.json`，通过 `investment-os-shared-state-` Actions cache 在工作流之间共享。
 
 ## 查看历史判断与解释评分
 

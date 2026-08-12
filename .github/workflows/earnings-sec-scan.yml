@@ -1,4 +1,4 @@
-name: Investment OS V4 财报与SEC扫描
+name: Investment OS V5 财报与SEC扫描
 
 on:
   workflow_dispatch:

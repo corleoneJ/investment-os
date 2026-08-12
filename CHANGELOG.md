@@ -1,5 +1,14 @@
 # 变更记录
 
+## V5
+
+- 在远端 V4 生产工程基础上接入 V5 Trade Filter Layer，保留原有 Provider、Scanner、Feishu、state 和 GitHub Actions。
+- 新增 Noise Filter、Market Impact Engine、Price Reaction Analyzer、Entry Timing Engine、Risk Reward Engine、Trade Grade、Final Action Resolver、Early Opportunity Detector、V5 Feishu Formatter 和 Alert Filtering。
+- 建立唯一最终动作 `FINAL_ACTION`：`WAIT_FOR_PULLBACK` 不得生成 `BUY`，`DO_NOT_CHASE` 不得生成 `BUY`，`NO_TRADE_VALUE` 不得生成 `BUY`，只有 `ENTRY_CONFIRMED` 且风控通过才允许 `BUY`。
+- 实时、新闻、财报/SEC、宏观模式统一进入 V5 过滤；旧 V4 模块不得绕过 `FINAL_ACTION` 直接发送买入信号。
+- 新增 V5 dry-run 矩阵、生产集成测试和 config validator 决策链校验。
+- GitHub Actions 显示名称升级为 Investment OS V5，触发频率保持不变。
+
 ## V4
 
 - 将实时、新闻、财报SEC、宏观、每日汇总和回测拆分为独立频率工作流。

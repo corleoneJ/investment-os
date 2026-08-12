@@ -1,4 +1,4 @@
-name: Investment OS V4 配置与测试
+name: Investment OS V5 配置与测试
 
 on:
   workflow_dispatch:
