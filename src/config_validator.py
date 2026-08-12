@@ -8,6 +8,8 @@ import yaml
 from .alpha_finder import ALPHA_ACTIONS
 from .flow_analyzer import FLOW_LABELS
 from .investment_score import V4_ACTIONS, InvestmentScoreCalculator
+from .trade_filter_layer import TradeFilterLayer
+from .v5_dry_run import NOW, scenarios
 from .valuation_engine import VALUATION_LABELS
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,6 +60,37 @@ def validate(root: Path = ROOT) -> list[str]:
         errors.append("Alpha建议枚举无法映射到V4建议")
     if not FLOW_LABELS:
         errors.append("资金流枚举不能为空")
+    errors.extend(_validate_v5_decision_chain())
+    return errors
+
+
+def _validate_v5_decision_chain() -> list[str]:
+    errors: list[str] = []
+    layer = TradeFilterLayer()
+    required = {
+        "garbage_news",
+        "s_wait_pullback",
+        "s_entry_confirmed",
+        "s_do_not_chase",
+        "a_wait_pullback",
+        "a_entry_confirmed",
+    }
+    available = set(scenarios())
+    missing = sorted(required - available)
+    if missing:
+        errors.append("V5 dry-run场景缺失：" + "、".join(missing))
+    for name, context in scenarios().items():
+        result = layer.evaluate(context, NOW)
+        final_action = result.final_action.final_action
+        entry_model = result.entry.entry_model
+        if entry_model == "WAIT_FOR_PULLBACK" and final_action == "BUY":
+            errors.append(f"{name}: WAIT_FOR_PULLBACK 不能生成 BUY")
+        if entry_model == "DO_NOT_CHASE" and final_action == "BUY":
+            errors.append(f"{name}: DO_NOT_CHASE 不能生成 BUY")
+        if entry_model == "NO_TRADE_VALUE" and final_action == "BUY":
+            errors.append(f"{name}: NO_TRADE_VALUE 不能生成 BUY")
+        if final_action == "BUY" and entry_model != "ENTRY_CONFIRMED":
+            errors.append(f"{name}: BUY 必须来自 ENTRY_CONFIRMED")
     return errors
 
 
@@ -79,7 +112,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
         return 1
-    print("配置校验通过：监控列表、候选池、产业链、同行组、估值规则和评分权重均有效。")
+    print("配置校验通过：V4配置与V5 FINAL_ACTION决策链均有效。")
     return 0
 
 

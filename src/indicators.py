@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
-from itertools import pairwise
 from statistics import pstdev
+
+try:
+    from itertools import pairwise
+except ImportError:  # Python 3.9 compatibility
+    def pairwise(iterable):
+        iterator = iter(iterable)
+        previous = next(iterator, None)
+        for current in iterator:
+            yield previous, current
+            previous = current
 
 
 def ema(values: Iterable[float], period: int) -> list[float]:
