@@ -104,24 +104,31 @@ Noise Filter
 
 ## 飞书推送策略
 
-只推：
+当前阶段只推：
 
-- S级机会
-- A级机会首次出现
-- A级升级为S
-- `BUY`
-- `ADD`
-- `EXIT`
-- 重大风险下的 `AVOID`
-- 黑天鹅风险
+- `FINAL_ACTION=BUY`
 
 不推：
 
+- S级机会但 `WAIT`
+- A级机会但 `WATCH`
+- `WAIT_FOR_PULLBACK`
+- `DO_NOT_CHASE`
+- `ADD`
+- `EXIT`
+- `AVOID`
 - B级
 - C级
 - 普通新闻
+- 普通重大新闻
+- 普通风险提示
 - 普通价格波动
+- 观察级机会
+- 产业链机会但未确认
 - 没有操作意义的分析
+- 任何“值得关注但现在不能买”的信息
+
+每日总结也遵守 BUY-only：当天没有 BUY 时不发送；当天有多个 BUY 时只发送简短 BUY 汇总，不重复完整消息。
 
 ## LLM 边界
 
@@ -136,9 +143,11 @@ python -m src.v5_dry_run
 示例输出：
 
 ```text
-garbage_news: send=False grade=C status=AVOID model=NO_TRADE_VALUE noise=True
-a_watch: send=True grade=A status=WATCH model=WATCHLIST noise=False
-s_buy: send=True grade=S status=BUY model=WAIT_FOR_PULLBACK noise=False
-do_not_chase: send=False grade=A status=WAIT model=DO_NOT_CHASE noise=False
-pullback_buy: send=True grade=S status=BUY model=WAIT_FOR_PULLBACK noise=False
+grade | entry_model | final_action | send
+C | NO_TRADE_VALUE | AVOID | False
+S | WAIT_FOR_PULLBACK | WAIT | False
+S | ENTRY_CONFIRMED | BUY | True
+S | DO_NOT_CHASE | WAIT | False
+A | WAIT_FOR_PULLBACK | WATCH | False
+A | ENTRY_CONFIRMED | BUY | True
 ```

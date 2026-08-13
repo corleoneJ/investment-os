@@ -57,7 +57,7 @@ flowchart LR
 | Investment Score | 规则化计算机会、风险、综合、置信度和数据质量分 |
 | V5 Trade Filter Layer | 将事件、资金、估值和技术位置统一解析为唯一 FINAL_ACTION |
 | Final Action Resolver | 保证 WAIT_FOR_PULLBACK/DO_NOT_CHASE/NO_TRADE_VALUE 永不绕过为 BUY |
-| V5 Alert Filtering | 只推送 S/A首次机会、A→S、WAIT→BUY、ADD/EXIT和重大AVOID，抑制重复与低价值信息 |
+| V5 Alert Filtering | 当前阶段只推送 `FINAL_ACTION=BUY`，抑制所有 WAIT/WATCH/AVOID/ADD/EXIT 和低价值信息 |
 | Ranking | 生成综合、Alpha、资金、估值、风险和数据不足榜 |
 | Replay / Backtest | 事件日切片回放，验证1/5/20日收益及MFE/MAE |
 | Alert Manager | 同一轮同一资产合并成一条完整消息 |
@@ -161,9 +161,9 @@ GitHub Actions 是准实时而非秒级实时，计划任务可能受平台负�
 
 ## V5 智能过滤与防轰炸
 
-V5 正式线上不再使用“频率限制关闭、评分门槛关闭、所有有意义信息全部发送”的 V4 观察模式。实时飞书只允许 S/A 首次机会、A→S、`ENTRY_CONFIRMED → BUY`、`ADD`、`EXIT`、重大 `AVOID` 或黑天鹅风险进入推送；B/C级、普通新闻、普通价格波动、普通评级变化、重复事件和无交易价值信息会被过滤。
+V5 正式线上不再使用“频率限制关闭、评分门槛关闭、所有有意义信息全部发送”的 V4 观察模式。当前阶段实时飞书只允许 `FINAL_ACTION=BUY` 进入推送；S级但等待、A级观察、`WAIT_FOR_PULLBACK`、`DO_NOT_CHASE`、`AVOID`、`ADD`、`EXIT`、普通新闻、普通价格波动、普通评级变化、重复事件和无交易价值信息都会被过滤。
 
-S级 `WAIT_FOR_PULLBACK` 可以发送一次“高质量机会，等待回踩，不建议追涨”；之后只有进入买入区、`FINAL_ACTION` 变化或出现新的实质事件才允许再次推送。统一状态保存在 `state/alerts.json`，通过 `investment-os-shared-state-` Actions cache 在工作流之间共享。
+`WAIT_FOR_PULLBACK` 和 `WATCH` 只留在日志和内部状态里，不推送飞书。只有 `ENTRY_CONFIRMED` 且资金、技术、风险收益比、风险和数据质量全部通过时，`FINAL_ACTION=BUY` 才会发送。统一状态保存在 `state/alerts.json`，通过 `investment-os-shared-state-` Actions cache 在工作流之间共享。
 
 ## 查看历史判断与解释评分
 

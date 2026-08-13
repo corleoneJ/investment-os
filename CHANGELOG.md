@@ -2,6 +2,8 @@
 
 ## V5
 
+- 收紧 Feishu 推送策略为 BUY-only：只有 `FINAL_ACTION=BUY` 才发送实时消息；`WAIT`、`WATCH`、`AVOID`、`ADD`、`EXIT` 和普通每日总结暂不推送。
+- BUY 消息改为固定结构，必须说明“为什么现在可以买”，并包含至少3条结构化买入理由、触发条件、资金确认、技术位置、催化剂、已确认事实/系统推断/暂无法验证、买入计划、风险、失效条件和一句总结。
 - 在远端 V4 生产工程基础上接入 V5 Trade Filter Layer，保留原有 Provider、Scanner、Feishu、state 和 GitHub Actions。
 - 新增 Noise Filter、Market Impact Engine、Price Reaction Analyzer、Entry Timing Engine、Risk Reward Engine、Trade Grade、Final Action Resolver、Early Opportunity Detector、V5 Feishu Formatter 和 Alert Filtering。
 - 建立唯一最终动作 `FINAL_ACTION`：`WAIT_FOR_PULLBACK` 不得生成 `BUY`，`DO_NOT_CHASE` 不得生成 `BUY`，`NO_TRADE_VALUE` 不得生成 `BUY`，只有 `ENTRY_CONFIRMED` 且风控通过才允许 `BUY`。

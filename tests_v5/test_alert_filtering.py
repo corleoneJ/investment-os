@@ -24,16 +24,20 @@ def record(grade="A", decision="WATCH", risk=40, event="event-a", zone="zone-a")
 
 
 class AlertFilteringTests(unittest.TestCase):
-    def test_a_upgrade_to_s_pushes_again(self):
+    def test_a_watch_does_not_push(self):
         alerts = AlertFilter()
-        self.assertTrue(alerts.should_push(record("A", "WATCH")).should_push)
         self.assertFalse(alerts.should_push(record("A", "WATCH")).should_push)
-        self.assertTrue(alerts.should_push(record("S", "BUY")).should_push)
+        self.assertFalse(alerts.should_push(record("A", "WATCH")).should_push)
 
-    def test_watch_to_buy_pushes_again(self):
+    def test_buy_pushes_once_and_duplicate_is_suppressed(self):
         alerts = AlertFilter()
-        self.assertTrue(alerts.should_push(record("A", "WATCH")).should_push)
         self.assertTrue(alerts.should_push(record("A", "BUY")).should_push)
+        self.assertFalse(alerts.should_push(record("A", "BUY")).should_push)
+
+    def test_new_buy_condition_pushes_again(self):
+        alerts = AlertFilter()
+        self.assertTrue(alerts.should_push(record("A", "BUY", event="event-a")).should_push)
+        self.assertTrue(alerts.should_push(record("A", "BUY", event="event-b")).should_push)
 
     def test_b_grade_not_pushed(self):
         self.assertFalse(AlertFilter().should_push(record("B", "WAIT")).should_push)
@@ -41,4 +45,3 @@ class AlertFilteringTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

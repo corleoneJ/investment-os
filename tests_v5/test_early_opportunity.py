@@ -16,9 +16,8 @@ class EarlyOpportunityTests(unittest.TestCase):
         self.assertEqual(result.early.signal, "EARLY_ALPHA")
         self.assertEqual(result.grade.grade, "A")
         self.assertEqual(result.entry.status, "WATCH")
-        self.assertTrue(result.should_send_feishu)
+        self.assertFalse(result.should_send_feishu)
 
 
 if __name__ == "__main__":
     unittest.main()
-

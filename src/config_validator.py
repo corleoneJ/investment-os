@@ -91,6 +91,10 @@ def _validate_v5_decision_chain() -> list[str]:
             errors.append(f"{name}: NO_TRADE_VALUE 不能生成 BUY")
         if final_action == "BUY" and entry_model != "ENTRY_CONFIRMED":
             errors.append(f"{name}: BUY 必须来自 ENTRY_CONFIRMED")
+        if result.should_send_feishu and final_action != "BUY":
+            errors.append(f"{name}: Feishu 只能推送 FINAL_ACTION=BUY")
+        if final_action == "BUY" and not result.should_send_feishu:
+            errors.append(f"{name}: BUY 信号必须进入 Feishu 推送")
     return errors
 
 
