@@ -86,6 +86,7 @@ class TradeFilterLayer:
             context.flow,
             context.market,
             context.valuation,
+            context.data_quality,
         )
         scoring = self._scoring(context, impact, reaction, entry, rr)
         signal = V5Signal(
@@ -99,15 +100,7 @@ class TradeFilterLayer:
             self._risks(context, reaction, rr),
             rr.invalidation_reason,
         )
-        should_send = (
-            not noise.is_noise
-            and (
-                grade.grade == "S"
-                or (grade.grade == "A" and final_action.final_action in ("WATCH", "WAIT", "BUY"))
-                or final_action.final_action in ("BUY", "ADD", "EXIT")
-                or (final_action.final_action == "AVOID" and entry.risk_score >= 70)
-            )
-        )
+        should_send = not noise.is_noise and final_action.final_action == "BUY"
         record = SignalRecord(
             context.event.event_id,
             context.event.symbol,
@@ -151,7 +144,11 @@ class TradeFilterLayer:
             risks.append("盈亏比不足。")
         if context.valuation.risk_score > 60:
             risks.append("风险评分偏高。")
-        return risks or ["若跌破止损结构，事件驱动判断失效。"]
+        return risks or [
+            "若跌破止损结构，事件驱动判断失效。",
+            "若成交量和VWAP确认消失，说明资金确认可能失效。",
+            "若催化剂被公告或后续数据证伪，需要撤销BUY判断。",
+        ]
 
     @staticmethod
     def _scoring(context, impact, reaction, entry, rr):

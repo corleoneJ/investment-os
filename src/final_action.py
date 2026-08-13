@@ -32,7 +32,9 @@ class FinalActionResolver:
         flow: FlowData,
         market: MarketData,
         valuation: ValuationData,
+        data_quality: str = "HIGH",
     ) -> FinalActionDecision:
+        data_quality_pass = data_quality.upper() == "HIGH"
         if entry.entry_model == "NO_TRADE_VALUE":
             return FinalActionDecision(
                 "AVOID",
@@ -69,13 +71,34 @@ class FinalActionResolver:
         if entry.entry_model == "ENTRY_CONFIRMED":
             risk_reward_pass = risk_reward.risk_reward_ratio >= 2.0
             risk_pass = entry.risk_score <= 60 and valuation.risk_score <= 60
+            technical_data_pass = all(
+                value is not None
+                for value in (
+                    market.price,
+                    market.ema20,
+                    market.support,
+                    market.resistance,
+                    market.volume_ratio,
+                    market.rsi,
+                )
+            )
+            numeric_data_pass = market.price > 0 and market.volume_ratio > 0 and risk_reward.entry_price > 0
             market_pass = not reaction.is_overheated and market.trend in (
                 "UP",
                 "REVERSAL",
                 "SIDEWAYS",
             )
             impact_pass = impact.impact_score >= 65
-            if flow.confirmed and risk_reward_pass and risk_pass and market_pass and impact_pass:
+            if (
+                data_quality_pass
+                and technical_data_pass
+                and numeric_data_pass
+                and flow.confirmed
+                and risk_reward_pass
+                and risk_pass
+                and market_pass
+                and impact_pass
+            ):
                 return FinalActionDecision(
                     "BUY",
                     "BUY",
@@ -87,7 +110,7 @@ class FinalActionResolver:
                 "WATCH",
                 "继续观察",
                 "继续观察",
-                "入场结构出现，但风险、资金或盈亏比尚未全部通过。",
+                "入场结构出现，但数据质量、风险、资金或盈亏比尚未全部通过。",
                 False,
             )
         if entry.entry_model == "EARLY_ALPHA":
@@ -105,4 +128,3 @@ class FinalActionResolver:
             "无法确认买入价值，默认WAIT。",
             False,
         )
-

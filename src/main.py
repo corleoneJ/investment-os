@@ -7,7 +7,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .daily_summary import build_v4_daily_summary
 from .feishu import FeishuClient
 from .future_events import FutureEventScanner
 from .market_data import MarketDataClient, MarketSnapshot
@@ -91,21 +90,13 @@ def run_daily(
     dry_run: bool,
 ) -> tuple[int, int]:
     all_assets = list({item["symbol"]: item for item in [*assets, *candidate_assets]}.values())
-    snapshots, report = analyze_market(all_assets, state)
-    visible = {
-        key: value
-        for key, value in snapshots.items()
-        if key != "DX-Y.NYB"
-    }
-    message = build_v4_daily_summary(
-        report,
-        visible,
-        state.data.get("history", []),
-        datetime.now(UTC),
-    )
-    message = message + "\n\n" + build_v5_daily_addendum(report, state)
+    _snapshots, report = analyze_market(all_assets, state)
+    message = build_v5_daily_addendum(report, state)
+    if not message:
+        LOGGER.info("V5每日决策：今日没有BUY信号，不发送飞书每日总结。")
+        return 0, 0
     if dry_run:
-        LOGGER.info("演练模式：已生成 V5 每日决策汇总，未发送。")
+        LOGGER.info("演练模式：已生成 V5 BUY 每日汇总，未发送。")
         return 1, 0
     sent = feishu.send(message)
     state.save()
@@ -194,50 +185,27 @@ def run_macro(
 def build_v5_daily_addendum(report: V4Report, state: StateStore) -> str:
     bridge = V5ProductionBridge(state, FeishuClient())
     results = [bridge.evaluate_decision(decision, report.generated_at) for decision in report.decisions]
-    alertable = [
-        result
-        for result in results
-        if result.grade.grade in {"S", "A"} or result.final_action.final_action in {"BUY", "WAIT", "WATCH", "AVOID"}
-    ]
-    filtered = [result for result in results if not result.should_send_feishu]
-    top = sorted(
-        alertable,
-        key=lambda item: (
-            {"BUY": 5, "WAIT": 4, "WATCH": 3, "AVOID": 2}.get(item.final_action.final_action, 1),
-            item.impact.impact_score,
-            item.entry.opportunity_score,
-        ),
-        reverse=True,
-    )[:5]
+    buys = [result for result in results if result.final_action.final_action == "BUY"]
+    if not buys:
+        return ""
     lines = [
-        "【Investment OS V5 交易过滤层】",
-        "最终动作统一由 FINAL_ACTION 生成，V4评分不得绕过V5直接触发BUY。",
+        "【Investment OS V5 今日BUY信号】",
+        f"时间：{report.generated_at:%Y-%m-%d %H:%M:%S}",
         "",
-        "【S/A机会与动作】",
+        "今日 BUY 信号：",
     ]
-    if not top:
-        lines.append("暂无达到V5推送门槛的S/A机会。")
-    else:
-        for result in top:
-            lines.append(
-                "{}｜{}级｜{}｜{}｜机会{}｜风险{}".format(
-                    result.signal_record.symbol,
-                    result.grade.grade,
-                    result.entry.entry_model,
-                    result.final_action.final_action,
-                    result.entry.opportunity_score,
-                    result.entry.risk_score,
-                )
+    for index, result in enumerate(buys, 1):
+        lines.append(
+            "{}. {}｜{}级｜ENTRY_CONFIRMED｜价格{:.2f}｜R/R {:.2f}".format(
+                index,
+                result.signal_record.symbol,
+                result.grade.grade,
+                result.signal_record.price,
+                result.risk_reward.risk_reward_ratio,
             )
-    lines.extend(
-        [
-            "",
-            "【过滤统计】",
-            f"本轮评估：{len(results)}",
-            f"被过滤：{len(filtered)}",
-            "过滤原则：B/C级、普通新闻、普通波动、重复事件、无交易价值信息不发送。",
-        ]
-    )
+        )
+    lines.append("")
+    lines.append("说明：普通每日总结已关闭；仅在当天出现BUY时发送简短汇总，完整执行细节以首次BUY实时信号为准。")
     return "\n".join(lines)
 
 

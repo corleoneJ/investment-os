@@ -85,22 +85,20 @@ class V5ProductionIntegrationTests(unittest.TestCase):
 
     def test_daily_mode_keeps_summary_and_adds_v5_filter_layer(self):
         report = SimpleNamespace(decisions=(), generated_at=datetime.now())
-        with patch("src.main.analyze_market", return_value=({}, report)), patch(
-            "src.main.build_v4_daily_summary", return_value="V4 daily summary"
-        ):
+        with patch("src.main.analyze_market", return_value=({}, report)):
             sent, failed = run_daily([], [], Mock(), Mock(), dry_run=True)
-        self.assertEqual((sent, failed), (1, 0))
+        self.assertEqual((sent, failed), (0, 0))
         addendum = build_v5_daily_addendum(report, Mock())
-        self.assertIn("Investment OS V5 交易过滤层", addendum)
+        self.assertEqual("", addendum)
 
     def test_final_action_matrix_is_enforced_in_production_chain(self):
         layer = TradeFilterLayer()
         expected = {
             "garbage_news": ("NO_TRADE_VALUE", "AVOID", False),
-            "s_wait_pullback": ("WAIT_FOR_PULLBACK", "WAIT", True),
+            "s_wait_pullback": ("WAIT_FOR_PULLBACK", "WAIT", False),
             "s_entry_confirmed": ("ENTRY_CONFIRMED", "BUY", True),
-            "s_do_not_chase": ("DO_NOT_CHASE", "WAIT", True),
-            "a_wait_pullback": ("WAIT_FOR_PULLBACK", "WATCH", True),
+            "s_do_not_chase": ("DO_NOT_CHASE", "WAIT", False),
+            "a_wait_pullback": ("WAIT_FOR_PULLBACK", "WATCH", False),
             "a_entry_confirmed": ("ENTRY_CONFIRMED", "BUY", True),
         }
         for name, (entry_model, final_action, send) in expected.items():
@@ -110,7 +108,7 @@ class V5ProductionIntegrationTests(unittest.TestCase):
                 self.assertEqual(result.final_action.final_action, final_action)
                 self.assertEqual(result.should_send_feishu, send)
 
-    def test_s_wait_first_push_repeated_wait_suppressed_and_buy_pushes_again(self):
+    def test_wait_is_not_pushed_and_buy_is_not_duplicated(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             state = StateStore(f"{tmpdir}/alerts.json")
             feishu = FakeFeishu()
@@ -118,16 +116,16 @@ class V5ProductionIntegrationTests(unittest.TestCase):
             wait_result = bridge.layer.evaluate(scenarios()["s_wait_pullback"], NOW)
             buy_result = bridge.layer.evaluate(scenarios()["s_entry_confirmed"], NOW)
 
-            self.assertTrue(bridge._deliver_result(wait_result, NOW, dry_run=False))
             self.assertFalse(bridge._deliver_result(wait_result, NOW, dry_run=False))
             self.assertTrue(bridge._deliver_result(buy_result, NOW, dry_run=False))
-            self.assertEqual(len(feishu.messages), 2)
+            self.assertFalse(bridge._deliver_result(buy_result, NOW, dry_run=False))
+            self.assertEqual(len(feishu.messages), 1)
 
     def test_feishu_formatter_reads_final_action(self):
         result = TradeFilterLayer().evaluate(scenarios()["s_wait_pullback"], NOW)
         self.assertEqual(result.final_action.final_action, "WAIT")
-        self.assertIn("当前动作：WAIT", result.feishu_message)
-        self.assertNotIn("允许小额首仓", result.feishu_message)
+        self.assertFalse(result.should_send_feishu)
+        self.assertEqual("", result.feishu_message)
 
 
 if __name__ == "__main__":

@@ -41,6 +41,7 @@ Provider / Scanner
 - `NO_TRADE_VALUE` → `AVOID`，禁止 `BUY`。
 - 只有 `ENTRY_CONFIRMED` 且资金、技术、风险收益比和风险条件通过时才允许 `BUY`。
 - 机会等级 `S/A/B/C` 与入场动作解耦；`S` 只代表高质量机会，不代表现在可以买。
+- 当前线上推送闸门为 BUY-only：只有 `FINAL_ACTION=BUY` 才允许 Feishu 实时通知；`WAIT`、`WATCH`、`AVOID`、`ADD`、`EXIT` 暂不推送。
 
 ## 安全边界
 
